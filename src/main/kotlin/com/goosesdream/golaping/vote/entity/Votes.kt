@@ -1,5 +1,6 @@
 package com.goosesdream.golaping.vote.entity
 
+import com.goosesdream.golaping.common.base.BaseEntity
 import com.goosesdream.golaping.common.enums.VoteType
 import com.goosesdream.golaping.user.entity.Users
 import jakarta.persistence.*
@@ -32,4 +33,4 @@ class Votes(
 
     @Column(nullable = false)
     var link: String? = null
-)
+) : BaseEntity()

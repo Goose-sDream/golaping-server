@@ -1,5 +1,6 @@
 package com.goosesdream.golaping.vote.entity
 
+import com.goosesdream.golaping.common.base.BaseEntity
 import com.goosesdream.golaping.user.entity.Users
 import jakarta.persistence.*
 import org.hibernate.annotations.DynamicInsert
@@ -24,4 +25,4 @@ class VoteOptions(
 
     @Column(nullable = false)
     var color: String
-)
+) : BaseEntity()

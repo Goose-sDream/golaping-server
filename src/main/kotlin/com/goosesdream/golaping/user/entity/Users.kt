@@ -1,5 +1,6 @@
 package com.goosesdream.golaping.user.entity
 
+import com.goosesdream.golaping.common.base.BaseEntity
 import jakarta.persistence.*
 import org.hibernate.annotations.DynamicInsert
 
@@ -12,6 +13,6 @@ class Users protected constructor(
 
     @Column(nullable = false)
     var name: String
-) {
+) : BaseEntity() {
     constructor(name: String) : this(null, name)
 }

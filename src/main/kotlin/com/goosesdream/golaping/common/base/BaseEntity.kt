@@ -16,7 +16,7 @@ class BaseEntity {
     var status: String = "active"
 
     @CreatedDate
-    @Column(updatable = false)
+    @Column(nullable = false, updatable = false)
     val regTs: LocalDateTime? = null
 
     @LastModifiedDate
