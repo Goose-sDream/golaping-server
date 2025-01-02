@@ -17,8 +17,8 @@ class BaseEntity {
 
     @CreatedDate
     @Column(updatable = false)
-    val regTs : LocalDateTime ?= null
+    val regTs: LocalDateTime? = null
 
     @LastModifiedDate
-    var updTs: LocalDateTime ?= null
+    var updTs: LocalDateTime? = null
 }
