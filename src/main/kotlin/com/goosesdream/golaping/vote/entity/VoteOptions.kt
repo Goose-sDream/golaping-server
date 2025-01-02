@@ -2,9 +2,11 @@ package com.goosesdream.golaping.vote.entity
 
 import com.goosesdream.golaping.user.entity.Users
 import jakarta.persistence.*
+import org.hibernate.annotations.DynamicInsert
 
 @Entity
-class VoteOption(
+@DynamicInsert
+class VoteOptions(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val voteOptionIdx: Long? = null,
