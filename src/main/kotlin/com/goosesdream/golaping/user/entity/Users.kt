@@ -12,7 +12,7 @@ class Users protected constructor(
     val id: Long? = null,
 
     @Column(nullable = false)
-    var name: String
+    var nickname: String
 ) : BaseEntity() {
     constructor(name: String) : this(null, name)
 }
