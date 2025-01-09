@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.configuration
+package com.goosesdream.golaping.configuration
 
 import io.swagger.v3.oas.models.OpenAPI
 import io.swagger.v3.oas.models.info.Info
