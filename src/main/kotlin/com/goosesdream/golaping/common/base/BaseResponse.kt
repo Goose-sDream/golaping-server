@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
 import com.goosesdream.golaping.common.base.BaseResponseStatus.SUCCESS
 
-@JsonPropertyOrder("isSuccess", "code", "message", "result")
+@JsonPropertyOrder("isSuccess", "message", "result")
 data class BaseResponse<T>(
     @JsonProperty("isSuccess")
     val isSuccess: Boolean,
