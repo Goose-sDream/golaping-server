@@ -28,7 +28,7 @@ class Votes(
     @Column(nullable = false)
     var endTime: LocalDateTime,
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     var userVoteLimit: Int,
 
     @Column(nullable = false)
