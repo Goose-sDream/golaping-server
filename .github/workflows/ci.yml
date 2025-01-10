@@ -1,13 +1,10 @@
-name: CI Workflow
+name: CI Process
 
 on:
   pull_request:
     branches:
       - main
       - develop
-      
-permissions:
-  pull-requests: write
 
 jobs:
   build:
