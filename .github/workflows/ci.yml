@@ -1,0 +1,57 @@
+name: CI Process
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions: write-all
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # repository checkout
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # install JDK 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21' 
+          distribution: 'temurin'
+
+      # create application file
+      - name: Create application.yml
+        run: |
+          mkdir ./src/main/resources
+          cd ./src/main/resources
+          touch ./application.yml
+          echo "${{ secrets.APPLICATION_FILE }}" > ./application.yml
+        shell: bash
+
+      # grant permission
+      - name: Grant permission for gradlew
+        run: chmod +x gradlew
+
+      # gradle build and test
+      - name: Build and test with Gradle
+        run: ./gradlew build 
+
+      # show test result as pr comment
+      - name: Publish test results as PR comment
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always() 
+        with:
+          files: '**/build/test-results/test/TEST-*.xml'
+        
+      # add comment at code lines
+      - name: Add check comment for failed test cases
+        uses: mikepenz/action-junit-report@v3
+        if: always()
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'
+          token: ${{ github.token }}
