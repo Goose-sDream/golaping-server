@@ -1,9 +1,8 @@
 name: CI Workflow
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
       - develop
 
 permissions: write-all
