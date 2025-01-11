@@ -1,9 +1,8 @@
 name: CI Workflow
 
 on:
-  pull_request:
+  push:
     branches:
-      - main
       - develop
 
 permissions: write-all
@@ -66,9 +65,9 @@ jobs:
       # Build Docker image
       - name: Build Docker image
         run: |
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/golaping:${{ github.sha }} .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/golaping .
 
       # Push Docker image to Docker Hub
       - name: Push Docker image to Docker Hub
         run: |
-          docker push ${{ secrets.DOCKER_USERNAME }}/golaping:${{ github.sha }}
+          docker push ${{ secrets.DOCKER_USERNAME }}/golaping
