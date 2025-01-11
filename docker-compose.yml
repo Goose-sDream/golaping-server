@@ -1,0 +1,26 @@
+version: '3.9'
+
+services:
+  redis:
+    image: redis:latest
+    container_name: redis-container
+    ports:
+      - "6379:6379"
+    networks:
+      - golaping-network
+
+  spring-app:
+    image: joonghyunkim/golaping:latest
+    container_name: golaping-container
+    environment:
+      - SPRING_REDIS_HOST=redis-container
+    depends_on:
+      - redis
+    ports:
+      - "8080:8080"
+    networks:
+      - golaping-network
+
+networks:
+  golaping-network:
+    driver: bridge
