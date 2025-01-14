@@ -6,13 +6,14 @@ import com.goosesdream.golaping.user.entity.Users
 import jakarta.persistence.*
 import org.hibernate.annotations.DynamicInsert
 import java.time.LocalDateTime
+import java.util.*
 
 @Entity
 @DynamicInsert
 class Votes(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val voteIdx: Long? = null,
+    val voteIdx: Long,
 
     @Column(nullable = false)
     var title: String,
@@ -32,5 +33,8 @@ class Votes(
     var userVoteLimit: Int? = null,
 
     @Column(nullable = false)
-    var link: String? = null
+    var link: String = "",
+
+    @Column(nullable = false, unique = true)
+    var uuid: String = UUID.randomUUID().toString()
 ) : BaseEntity()
