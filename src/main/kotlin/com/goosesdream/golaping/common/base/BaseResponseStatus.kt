@@ -27,6 +27,7 @@ enum class BaseResponseStatus(
     INVALID_SESSION(false, HttpStatus.BAD_REQUEST, "유효하지 않은 세션입니다."),
     UNAUTHORIZED(false, HttpStatus.UNAUTHORIZED, "인증되지 않은 사용자입니다."),
     INVALID_VOTE_UUID(false, HttpStatus.BAD_REQUEST, "유효하지 않은 vote uuid입니다."),
+    MISSING_SESSION_ID(false, HttpStatus.BAD_REQUEST, "세션 ID가 없습니다."),
 
     /**
      * Response 오류
