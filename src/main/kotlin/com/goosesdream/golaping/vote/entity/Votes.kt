@@ -13,7 +13,7 @@ import java.util.*
 class Votes(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val voteIdx: Long,
+    val voteIdx: Long? = null,
 
     @Column(nullable = false)
     var title: String,
