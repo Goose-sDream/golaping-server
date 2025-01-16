@@ -6,5 +6,5 @@ data class CreateVoteRequest(
     val type: String,
     val timeLimit: Int,
     val userVoteLimit: Int?,
-    val link: String?
+    val link: String
 )
