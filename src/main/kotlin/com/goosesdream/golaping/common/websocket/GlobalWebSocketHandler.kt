@@ -14,7 +14,7 @@ class GlobalWebSocketHandler : WebSocketHandler {
     override fun afterConnectionEstablished(session: WebSocketSession) {
 
         val voteUuid = session.attributes["voteUuid"] as? String
-        val nickname = session.attributes["nickname"] as? String
+        val nickname = session.attributes["nickname"] as? String // 투표 종료 상태면 empty string
         val isVoteEnded = session.attributes["isVoteEnded"] as? Boolean
 
         if (voteUuid != null) {
