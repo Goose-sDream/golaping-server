@@ -16,11 +16,17 @@ enum class BaseResponseStatus(
      * Request 오류
      */
     // user
-    INVALID_USER(false, HttpStatus.BAD_REQUEST, "유저 정보가 올바르지 않습니다."),
+    INVALID_USER(false, HttpStatus.BAD_REQUEST, "유효하지 않은 user 입니다."),
 
     // vote
     INVALID_VOTE_TYPE(false, HttpStatus.BAD_REQUEST, "투표 타입이 올바르지 않습니다."),
     INVALID_TIME_LIMIT(false, HttpStatus.BAD_REQUEST, "투표 제한 시간이 유효하지 않습니다."),
+    ALREADY_EXIST_CHANNEL(false, HttpStatus.BAD_REQUEST, "이미 존재하는 채널입니다."),
+
+    // session
+    INVALID_SESSION(false, HttpStatus.BAD_REQUEST, "유효하지 않은 세션입니다."),
+    UNAUTHORIZED(false, HttpStatus.UNAUTHORIZED, "인증되지 않은 사용자입니다."),
+    INVALID_VOTE_UUID(false, HttpStatus.BAD_REQUEST, "유효하지 않은 vote uuid입니다."),
 
     /**
      * Response 오류
