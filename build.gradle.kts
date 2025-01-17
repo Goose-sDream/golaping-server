@@ -26,7 +26,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+    implementation ("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
     implementation("org.springframework.session:spring-session-data-redis")
     runtimeOnly("com.mysql:mysql-connector-j:9.1.0")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
