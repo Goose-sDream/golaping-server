@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository
 
 @Repository
 interface VoteRepository : JpaRepository<Votes, Long> {
+    fun findByUuid(uuid: String): Votes?
 }
