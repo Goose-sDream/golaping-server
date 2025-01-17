@@ -7,15 +7,17 @@ import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
 import com.goosesdream.golaping.vote.dto.CreateVoteResponse
 import com.goosesdream.golaping.vote.service.VoteService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.*
 import java.net.URI
 import java.util.*
 
-
 @RestController
 @RequestMapping(VOTES)
+@Tag(name = "Vote", description = "투표 관련 API")
 class VoteController(
     private val voteService: VoteService,
     private val sessionService: SessionService,
@@ -28,6 +30,7 @@ class VoteController(
     private lateinit var websocketPath: String
 
     @PostMapping
+    @Operation(summary = "투표 생성", description = "새로운 투표를 생성하고, WebSocket URL과 SessionID를 반환한다.")
     fun createVote(
         @RequestBody voteRequest: CreateVoteRequest,
         request: HttpServletRequest
@@ -47,16 +50,5 @@ class VoteController(
     fun generateWebSocketUrl(voteUuid: String): String {
         return "$websocketBaseUrl$websocketPath/$voteUuid"
     }
-
-    // 투표 접속
-//    @GetMapping("/vote")
-//    fun votePage(request: HttpServletRequest): String {
-//        val session = request.getSession(false)
-//        if (session?.getAttribute("nickname") == null) {
-//            return "redirect:/nickname-input" // 닉네임 입력 페이지로 리디렉션
-//        }
-//        return "vote" // 투표 화면으로 이동
-//    }
-
 }
 
