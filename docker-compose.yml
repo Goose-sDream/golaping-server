@@ -15,7 +15,7 @@ services:
     networks:
       - golaping-network
   spring-app:
-    image: joonghyunkimv/golaping:latest
+    image: joonghyunkim/golaping:latest
     container_name: golaping-container
     environment:
       - SPRING_REDIS_HOST=redis-container
