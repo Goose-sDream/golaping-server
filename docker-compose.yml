@@ -14,7 +14,6 @@ services:
     command: /bin/sh -c "mkdir -p /usr/local/conf && redis-server /usr/local/conf/redis.conf"
     networks:
       - golaping-network
-
   spring-app:
     image: joonghyunkimv/golaping:latest
     container_name: golaping-container
@@ -26,7 +25,6 @@ services:
       - "8080:8080"
     networks:
       - golaping-network
-
 networks:
   golaping-network:
     driver: bridge
