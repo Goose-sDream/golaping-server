@@ -36,5 +36,5 @@ jobs:
             sudo docker-compose -f /home/ubuntu/compose/docker-compose.yml down
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/golaping:latest
             sudo docker-compose -f /home/ubuntu/compose/docker-compose.yml up -d
-            sudo docker rm $(docker ps --filter 'status=exited' -qa)
+            sudo docker rm $(docker ps --filter 'status=exited' -qa) || echo "No containers to remove."
             sudo docker image prune -f
