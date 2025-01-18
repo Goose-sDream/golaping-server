@@ -10,8 +10,8 @@ services:
       - REDIS_PASSWORD=${REDIS_PASSWORD}
     volumes:
       - /home/ubuntu/redis/data:/data
-      - /home/ubuntu/redis/conf/redis.conf:/usr/local/conf/redis.conf
-    command: /bin/sh -c "mkdir -p /usr/local/conf && redis-server /usr/local/conf/redis.conf"
+      - /home/ubuntu/redis/conf/redis.conf:/usr/local/etc/redis.conf
+    command: redis-server /usr/local/etc/redis.conf
     networks:
       - golaping-network
   spring-app:
