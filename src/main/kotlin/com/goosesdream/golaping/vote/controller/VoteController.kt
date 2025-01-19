@@ -39,6 +39,8 @@ class VoteController(
         sessionService.saveNicknameToSession(sessionId, voteRequest.nickname, voteRequest.timeLimit)
 
         val voteUuid = URI(voteRequest.link).path.split("/").last() // uuid 형식
+
+        voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
         voteService.createVote(voteRequest, voteUuid)
