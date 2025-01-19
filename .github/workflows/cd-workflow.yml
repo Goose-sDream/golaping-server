@@ -23,15 +23,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Copy docker-compose.yml to EC2
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.PRIVATE_KEY }}
-          script: |
-            scp $GITHUB_WORKSPACE/docker-compose.yml ubuntu@${{ secrets.EC2_HOST }}:/home/ubuntu/compose/docker-compose.yml
-
       - name: Deploy with Docker Compose
         uses: appleboy/ssh-action@master
         with:
@@ -40,10 +31,9 @@ jobs:
           key: ${{ secrets.PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/compose
-            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" > .env
+            echo "REDIS_PASSWORD=${{ secrets.REDIS_PASSWORD }}" | sudo tee .env > /dev/null
 
             sudo docker-compose -f /home/ubuntu/compose/docker-compose.yml down
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/golaping:latest
             sudo docker-compose -f /home/ubuntu/compose/docker-compose.yml up -d
-            sudo docker rm $(docker ps --filter 'status=exited' -qa)
             sudo docker image prune -f
