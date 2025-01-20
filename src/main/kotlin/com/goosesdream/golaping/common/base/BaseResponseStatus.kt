@@ -17,6 +17,9 @@ enum class BaseResponseStatus(
      */
     // user
     INVALID_USER(false, HttpStatus.BAD_REQUEST, "유효하지 않은 user 입니다."),
+    NICKNAME_ALREADY_EXISTS_IN_VOTE(false, HttpStatus.BAD_REQUEST, "해당 투표에서 이미 존재하는 닉네임입니다."),
+    INVALID_NICKNAME(false, HttpStatus.BAD_REQUEST, "유효하지 않은 닉네임 형식입니다."),
+    USER_ALREADY_PARTICIPANT(false, HttpStatus.BAD_REQUEST, "이미 참여한 사용자입니다."),
 
     // vote
     INVALID_VOTE_TYPE(false, HttpStatus.BAD_REQUEST, "투표 타입이 올바르지 않습니다."),
