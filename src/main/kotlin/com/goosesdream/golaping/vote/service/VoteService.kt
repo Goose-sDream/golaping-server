@@ -21,7 +21,7 @@ class VoteService(
 ) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
-    fun createVote(request: CreateVoteRequest, voteUuid: String) {
+    fun createVote(request: CreateVoteRequest, voteUuid: String) { //TODO: voteType 체크 로직
         val creator = findUserByNickname(request.nickname)
         val voteType = parseVoteType(request.type)
         validateTimeLimit(request.timeLimit)

@@ -6,7 +6,7 @@ import org.hibernate.annotations.DynamicInsert
 
 @Entity
 @DynamicInsert
-class Users protected constructor(
+class Users(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long? = null,
@@ -14,5 +14,5 @@ class Users protected constructor(
     @Column(nullable = false)
     var nickname: String
 ) : BaseEntity() {
-    constructor(name: String) : this(null, name)
+    constructor(nickname: String) : this(null, nickname)
 }
