@@ -65,7 +65,7 @@ class VoteControllerTest {
         val voteUuid = "12345"
         val websocketUrl = "ws://localhost:8080/ws/$voteUuid"
 
-        doNothing().`when`(sessionService).saveNicknameToSession(any(), eq("testUser"), eq(10))
+        doNothing().`when`(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         doNothing().`when`(webSocketManager).startWebSocketForVote(any(), eq(10))
         doNothing().`when`(voteService).createVote(any(), eq(sessionId))
 
@@ -88,7 +88,7 @@ class VoteControllerTest {
         assertThat(createVoteResponse.websocketUrl).isEqualTo(websocketUrl)
         assertThat(createVoteResponse.sessionId).matches("^[0-9a-fA-F-]{36}$")
 
-        verify(sessionService).saveNicknameToSession(any(), eq("testUser"), eq(10))
+        verify(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         verify(webSocketManager).startWebSocketForVote(eq(voteUuid), eq(10))
         verify(voteService).createVote(eq(voteRequest), eq(voteUuid))
     }

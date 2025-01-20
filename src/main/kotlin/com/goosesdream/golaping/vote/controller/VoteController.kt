@@ -4,15 +4,22 @@ import com.goosesdream.golaping.common.base.BaseResponse
 import com.goosesdream.golaping.common.constants.RequestURI.Companion.VOTES
 import com.goosesdream.golaping.common.websocket.WebSocketManager
 import com.goosesdream.golaping.session.service.SessionService
+import com.goosesdream.golaping.user.service.UserService
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
 import com.goosesdream.golaping.vote.dto.CreateVoteResponse
+import com.goosesdream.golaping.vote.dto.EnterVoteRequest
+import com.goosesdream.golaping.vote.dto.EnterVoteResponse
 import com.goosesdream.golaping.vote.service.VoteService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.servlet.http.HttpServletResponse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.web.bind.annotation.*
 import java.net.URI
+import java.time.Duration
+import java.time.LocalDateTime
 import java.util.*
 
 @RestController
@@ -21,7 +28,8 @@ import java.util.*
 class VoteController(
     private val voteService: VoteService,
     private val sessionService: SessionService,
-    private val webSocketManager: WebSocketManager
+    private val webSocketManager: WebSocketManager,
+    private val userService: UserService
 ) {
     @Value("\${websocket.base-url}")
     private lateinit var websocketBaseUrl: String
@@ -36,9 +44,11 @@ class VoteController(
         request: HttpServletRequest
     ): BaseResponse<CreateVoteResponse> {
         val sessionId = UUID.randomUUID().toString()
-        sessionService.saveNicknameToSession(sessionId, voteRequest.nickname, voteRequest.timeLimit)
+        sessionService.saveCreatorNicknameToSession(sessionId, voteRequest.nickname, voteRequest.timeLimit)
 
         val voteUuid = URI(voteRequest.link).path.split("/").last() // uuid 형식
+
+        voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
         voteService.createVote(voteRequest, voteUuid)
@@ -49,6 +59,34 @@ class VoteController(
 
     fun generateWebSocketUrl(voteUuid: String): String {
         return "$websocketBaseUrl$websocketPath/$voteUuid"
+    }
+
+    @PostMapping("/enter")
+    @Operation(summary = "닉네임 입력", description = "닉네임을 입력받고, websocketUrl과 SessionID, voteEndTime을 반환한다.")
+    fun enterVote(
+        @RequestBody voteRequest: EnterVoteRequest,
+        request: HttpServletRequest,
+        response: HttpServletResponse
+    ): BaseResponse<EnterVoteResponse> {
+        val sessionId = UUID.randomUUID().toString()
+
+        val voteEndTime = voteService.getVoteEndTime(voteRequest.voteUuid)
+        val currentTime = LocalDateTime.now()
+        val timeLimit = Duration.between(currentTime, voteEndTime).toMinutes().toInt()
+        sessionService.saveNicknameToSession(sessionId, voteRequest.nickname, timeLimit) // 접속한 유저의 sessionId와 nickname 저장
+
+        userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
+        userService.addParticipant(voteRequest.nickname, voteRequest.voteUuid)
+
+        val websocketUrl = generateWebSocketUrl(voteRequest.voteUuid)
+
+        val cookie = Cookie("SESSIONID", sessionId)
+        cookie.isHttpOnly = true
+        cookie.path = "/"
+        cookie.maxAge = timeLimit * 60
+        response.addCookie(cookie)
+
+        return BaseResponse(EnterVoteResponse(websocketUrl, voteEndTime))
     }
 }
 

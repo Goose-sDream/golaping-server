@@ -9,6 +9,12 @@ class SessionService(
 ) {
     private val nicknamePrefix = "session:nickname:"
 
+    fun saveCreatorNicknameToSession(sessionId: String, nickname: String, timeLimit: Int) {
+        val redisKey = nicknamePrefix + sessionId
+        val ttlInSeconds = timeLimit * 60L
+        redisService.save(redisKey, nickname, ttlInSeconds)
+    }
+
     fun saveNicknameToSession(sessionId: String, nickname: String, timeLimit: Int) {
         val redisKey = nicknamePrefix + sessionId
         val ttlInSeconds = timeLimit * 60L

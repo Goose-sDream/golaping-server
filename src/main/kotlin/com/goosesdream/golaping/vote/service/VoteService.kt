@@ -3,6 +3,7 @@ package com.goosesdream.golaping.vote.service
 import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.base.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
+import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.user.repository.UserRepository
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
@@ -15,11 +16,12 @@ import java.time.LocalDateTime
 @Service
 class VoteService(
     private val voteRepository: VoteRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val redisService: RedisService
 ) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
-    fun createVote(request: CreateVoteRequest, voteUuid: String) {
+    fun createVote(request: CreateVoteRequest, voteUuid: String) { //TODO: voteType 체크 로직
         val creator = findUserByNickname(request.nickname)
         val voteType = parseVoteType(request.type)
         validateTimeLimit(request.timeLimit)
@@ -67,5 +69,19 @@ class VoteService(
     fun checkVoteEnded(voteUuid: String): Boolean {
         val vote = voteRepository.findByUuid(voteUuid)
         return vote?.endTime?.isBefore(LocalDateTime.now()) ?: true
+    }
+
+    // 투표 종료 시간 조회
+    fun getVoteEndTime(voteUuid: String): LocalDateTime? {
+        val vote = voteRepository.findByUuid(voteUuid)
+        return vote?.endTime
+    }
+
+    private val voteExpirationPrefix = "vote:expiration:"
+
+    fun saveVoteExpirationToRedis(voteUuid: String, timeLimit: Int) {
+        val redisKey = voteExpirationPrefix + voteUuid
+        val ttlInSeconds = timeLimit * 60L
+        redisService.save(redisKey, "active", ttlInSeconds)
     }
 }

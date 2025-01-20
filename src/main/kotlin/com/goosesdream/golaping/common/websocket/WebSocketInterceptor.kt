@@ -22,7 +22,7 @@ class WebSocketInterceptor(
     private val voteService: VoteService
 ) : HandshakeInterceptor {
 
-    override fun beforeHandshake(
+    override fun beforeHandshake( // WebSocket 연결 전 실행되는 HTTP 요청
         request: ServerHttpRequest,
         response: ServerHttpResponse,
         wsHandler: WebSocketHandler,
