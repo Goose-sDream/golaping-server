@@ -12,6 +12,8 @@ import com.goosesdream.golaping.vote.dto.CreateVoteRequest
 import com.goosesdream.golaping.common.base.BaseResponse
 import com.goosesdream.golaping.vote.dto.CreateVoteResponse
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.goosesdream.golaping.user.entity.Users
+import com.goosesdream.golaping.user.service.UserService
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers
 import org.junit.jupiter.api.DisplayName
@@ -44,6 +46,9 @@ class VoteControllerTest {
     @MockitoBean
     private lateinit var sessionService: SessionService
 
+    @MockitoBean
+    private lateinit var userService: UserService
+
     @MockitoSpyBean
     private lateinit var webSocketManager: WebSocketManager
 
@@ -55,7 +60,7 @@ class VoteControllerTest {
         val voteRequest = CreateVoteRequest(
             nickname = "testUser",
             title = "Test Vote",
-            type = "SINGLE",
+            type = "MAJORITY",
             timeLimit = 10,
             userVoteLimit = 1,
             link = "http://example.com/vote/12345"
@@ -64,10 +69,13 @@ class VoteControllerTest {
         val sessionId = UUID.randomUUID().toString()
         val voteUuid = "12345"
         val websocketUrl = "ws://localhost:8080/ws/$voteUuid"
+        val creator = Users(nickname = "testUser")
 
         doNothing().`when`(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         doNothing().`when`(webSocketManager).startWebSocketForVote(any(), eq(10))
-        doNothing().`when`(voteService).createVote(any(), eq(sessionId))
+
+        `when`(userService.findOrCreateUser(eq("testUser"))).thenReturn(creator)
+        doNothing().`when`(voteService).createVote(any(), eq(sessionId), eq(creator))
 
         val result = mockMvc.perform(
             post("/api/votes")
@@ -76,9 +84,7 @@ class VoteControllerTest {
         )
             .andExpect(status().isOk())  // 200 응답을 기대
             .andExpect(jsonPath("$.isSuccess").value(true))
-
             .andExpect(jsonPath("$.result.websocketUrl").value("ws://localhost:8080/ws/12345"))
-
             .andExpect(jsonPath("$.result.sessionId").value(Matchers.matchesPattern("^[0-9a-fA-F-]{36}$")))
             .andReturn()
 
@@ -90,6 +96,7 @@ class VoteControllerTest {
 
         verify(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         verify(webSocketManager).startWebSocketForVote(eq(voteUuid), eq(10))
-        verify(voteService).createVote(eq(voteRequest), eq(voteUuid))
+        verify(userService).findOrCreateUser(eq("testUser"))
+        verify(voteService).createVote(eq(voteRequest), eq(voteUuid), eq(creator))
     }
 }
