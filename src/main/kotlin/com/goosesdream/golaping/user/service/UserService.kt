@@ -18,7 +18,7 @@ class UserService(
     private val participantRepository: ParticipantRepository
 ) {
     @Transactional(rollbackFor = [Exception::class])
-    fun createUser(nickname: String, voteUuid: String) {
+    fun createUser(nickname: String, voteUuid: String) : Users {
         validateNickname(nickname)
 
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(INVALID_VOTE_UUID)
@@ -28,6 +28,21 @@ class UserService(
 
         val newUser = buildUser(nickname)
         saveUser(newUser)
+        return newUser
+    }
+
+    fun findOrCreateUser(nickname : String, voteUuid: String): Users {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(INVALID_VOTE_UUID)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname)
+
+        return participant?.user ?: buildAndSaveUser(nickname)
+    }
+
+    private fun buildAndSaveUser(nickname: String): Users {
+        validateNickname(nickname)
+        val newUser = buildUser(nickname)
+        saveUser(newUser)
+        return newUser
     }
 
     private fun validateNickname(nickname: String) {
@@ -47,11 +62,10 @@ class UserService(
     }
 
     @Transactional(rollbackFor = [Exception::class])
-    fun addParticipant(nickname: String, voteUuid: String) {
-        val user = userRepository.findByNickname(nickname) ?: throw BaseException(INVALID_USER)
+    fun addParticipant(user : Users, voteUuid: String) {
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(INVALID_VOTE_UUID)
 
-        val isAlreadyParticipant = participantRepository.existsByVoteAndUserNickname(vote, nickname)
+        val isAlreadyParticipant = participantRepository.existsByVoteAndUserNickname(vote, user.nickname)
         if (isAlreadyParticipant) throw BaseException(USER_ALREADY_PARTICIPANT)
 
         val participant = buildParticipant(user, vote)

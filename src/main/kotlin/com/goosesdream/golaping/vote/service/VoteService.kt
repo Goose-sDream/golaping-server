@@ -21,17 +21,12 @@ class VoteService(
 ) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
-    fun createVote(request: CreateVoteRequest, voteUuid: String) { //TODO: voteType 체크 로직
-        val creator = findUserByNickname(request.nickname)
+    fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) { //TODO: voteType 체크 로직
         val voteType = parseVoteType(request.type)
         validateTimeLimit(request.timeLimit)
 
         val vote = buildVote(request, creator, voteType, voteUuid)
         saveVote(vote)
-    }
-
-    private fun findUserByNickname(nickname: String): Users {
-        return userRepository.findByNickname(nickname) ?: throw BaseException(INVALID_USER)
     }
 
     private fun parseVoteType(type: String): VoteType {

@@ -51,7 +51,9 @@ class VoteController(
         voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
-        voteService.createVote(voteRequest, voteUuid)
+        val creator = userService.findOrCreateUser(voteRequest.nickname, voteUuid)
+        voteService.createVote(voteRequest, voteUuid, creator)
+        userService.addParticipant(creator, voteUuid)
 
         val websocketUrl = generateWebSocketUrl(voteUuid)
         return BaseResponse(CreateVoteResponse(websocketUrl, sessionId))
@@ -75,8 +77,8 @@ class VoteController(
         val timeLimit = Duration.between(currentTime, voteEndTime).toMinutes().toInt()
         sessionService.saveNicknameToSession(sessionId, voteRequest.nickname, timeLimit) // 접속한 유저의 sessionId와 nickname 저장
 
-        userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
-        userService.addParticipant(voteRequest.nickname, voteRequest.voteUuid)
+        val user = userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
+        userService.addParticipant(user, voteRequest.voteUuid)
 
         val websocketUrl = generateWebSocketUrl(voteRequest.voteUuid)
 
