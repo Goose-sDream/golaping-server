@@ -7,6 +7,9 @@ import org.hibernate.annotations.DynamicInsert
 
 @Entity
 @DynamicInsert
+@Table(
+    uniqueConstraints = [UniqueConstraint(columnNames = ["vote_idx", "user_idx"])]
+)
 class Participants(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
