@@ -51,7 +51,9 @@ class VoteController(
         voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
-        voteService.createVote(voteRequest, voteUuid)
+        val creator = userService.findOrCreateUser(voteRequest.nickname)
+        voteService.createVote(voteRequest, voteUuid, creator)
+        userService.addParticipant(voteRequest.nickname, voteUuid)
 
         val websocketUrl = generateWebSocketUrl(voteUuid)
         return BaseResponse(CreateVoteResponse(websocketUrl, sessionId))

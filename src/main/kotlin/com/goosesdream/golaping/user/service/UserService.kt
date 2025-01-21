@@ -30,6 +30,17 @@ class UserService(
         saveUser(newUser)
     }
 
+    fun findOrCreateUser(nickname : String): Users {
+        return userRepository.findByNickname(nickname) ?: buildAndSaveUser(nickname)
+    }
+
+    private fun buildAndSaveUser(nickname: String): Users {
+        validateNickname(nickname)
+        val newUser = buildUser(nickname)
+        saveUser(newUser)
+        return newUser
+    }
+
     private fun validateNickname(nickname: String) {
         if (nickname.isBlank()) {
             throw BaseException(INVALID_NICKNAME)
