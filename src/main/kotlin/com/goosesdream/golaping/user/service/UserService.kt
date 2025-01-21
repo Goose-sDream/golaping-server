@@ -31,8 +31,11 @@ class UserService(
         return newUser
     }
 
-    fun findOrCreateUser(nickname : String): Users {
-        return userRepository.findByNickname(nickname) ?: buildAndSaveUser(nickname)
+    fun findOrCreateUser(nickname : String, voteUuid: String): Users {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(INVALID_VOTE_UUID)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname)
+
+        return participant?.user ?: buildAndSaveUser(nickname)
     }
 
     private fun buildAndSaveUser(nickname: String): Users {

@@ -29,22 +29,6 @@ class VoteService(
         saveVote(vote)
     }
 
-    private fun findOrCreateUserByNickname(nickname: String): Users {
-        return userRepository.findByNickname(nickname) ?: createUser(nickname)
-    }
-
-    private fun createUser(nickname: String): Users {
-        validateNickname(nickname)
-        val newUser = Users(nickname = nickname)
-        return userRepository.save(newUser)
-    }
-
-    private fun validateNickname(nickname: String) {
-        if (nickname.isBlank()) {
-            throw BaseException(INVALID_NICKNAME)
-        }
-    }
-
     private fun parseVoteType(type: String): VoteType {
         return try {
             VoteType.valueOf(type.uppercase())
