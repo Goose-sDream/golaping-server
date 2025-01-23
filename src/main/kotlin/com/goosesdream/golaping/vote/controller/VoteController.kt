@@ -48,10 +48,11 @@ class VoteController(
 
         val voteUuid = URI(voteRequest.link).path.split("/").last() // uuid 형식
 
+
         voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
-        val creator = userService.findOrCreateUser(voteRequest.nickname, voteUuid)
+        val creator = userService.createUserForVote(voteRequest.nickname)
         voteService.createVote(voteRequest, voteUuid, creator)
         userService.addParticipant(creator, voteUuid)
 
