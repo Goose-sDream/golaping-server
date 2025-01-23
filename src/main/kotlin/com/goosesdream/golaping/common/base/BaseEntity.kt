@@ -10,14 +10,14 @@ import java.time.LocalDateTime
 
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener::class)
-class BaseEntity {
+open class BaseEntity {
 
     @Column(columnDefinition = "varchar(10) default 'active'")
     var status: String = "active"
 
     @CreatedDate
     @Column(nullable = false, updatable = false)
-    val regTs: LocalDateTime? = null
+    var regTs: LocalDateTime? = null
 
     @LastModifiedDate
     var updTs: LocalDateTime? = null
