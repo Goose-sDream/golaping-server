@@ -74,7 +74,7 @@ class VoteControllerTest {
         doNothing().`when`(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         doNothing().`when`(webSocketManager).startWebSocketForVote(any(), eq(10))
 
-        `when`(userService.findOrCreateUser(eq("testUser"), eq(voteUuid))).thenReturn(creator)
+        `when`(userService.createUserForVote(eq("testUser"))).thenReturn(creator)
         doNothing().`when`(voteService).createVote(any(), eq(sessionId), eq(creator))
 
         val result = mockMvc.perform(
@@ -96,7 +96,7 @@ class VoteControllerTest {
 
         verify(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         verify(webSocketManager).startWebSocketForVote(eq(voteUuid), eq(10))
-        verify(userService).findOrCreateUser(eq("testUser"), eq(voteUuid))
+        verify(userService).createUserForVote(eq("testUser"))
         verify(voteService).createVote(eq(voteRequest), eq(voteUuid), eq(creator))
     }
 }
