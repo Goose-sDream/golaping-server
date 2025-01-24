@@ -26,8 +26,7 @@ class WebSocketManager(
             val remainingTimeMillis = expirationTime - System.currentTimeMillis()
 
             if (remainingTimeMillis > 0) {
-                // 타이머 설정
-                setWebSocketTimer(voteUuid, remainingTimeMillis)
+                setWebSocketTimer(voteUuid, remainingTimeMillis) // 타이머 설정
             } else { // 이미 만료된 경우 바로 종료 처리
                 stopWebSocketForVote(voteUuid)
             }
