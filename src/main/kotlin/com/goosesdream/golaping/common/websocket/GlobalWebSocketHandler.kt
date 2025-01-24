@@ -1,5 +1,6 @@
 package com.goosesdream.golaping.common.websocket
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.CloseStatus
 import org.springframework.web.socket.WebSocketHandler
@@ -8,50 +9,29 @@ import org.springframework.web.socket.WebSocketSession
 
 @Component
 class GlobalWebSocketHandler(
-    private val webSocketManager: WebSocketManager
+    private val webSocketManager: WebSocketManager,
+    private val objectMapper: ObjectMapper
 ) : WebSocketHandler{
 
-    override fun afterConnectionEstablished(session: WebSocketSession) {
+    override fun afterConnectionEstablished(session: WebSocketSession) { // WebSocket 연결 성립된 후 실행
         val voteUuid = session.attributes["voteUuid"] as? String
 
         if (voteUuid != null) {
-            var expirationTime = webSocketManager.getChannelExpirationTime(voteUuid)
+            val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid)
 
-            if (expirationTime != null) {
-                val remainingTimeMillis = expirationTime - System.currentTimeMillis()
-
-                // 세션이 없으면(처음 접속하는 유저) 새로운 타이머 설정
-                val existingSession = webSocketManager.restoreWebSocketSession(voteUuid)
-                if (existingSession == null) {
-                    if (remainingTimeMillis > 0) {
-                        webSocketManager.setWebSocketTimer(voteUuid, remainingTimeMillis)
-                    } else {
-                        webSocketManager.stopWebSocketForVote(voteUuid)
-                    }
-                }
-            } else { // 이미 종료된 투표 또는 유효하지 않은 상태인 경우
+            if (expirationTime == null || expirationTime <= System.currentTimeMillis()) { // 종료된 투표 또는 유효하지 않는 투표면
                 webSocketManager.stopWebSocketForVote(voteUuid)
+                return
             }
 
-            // 세션이 없으면(처음 접속하는 유저) 새로운 채널 시작
-            val existingSession = webSocketManager.restoreWebSocketSession(voteUuid)
-            if (existingSession == null) {
-                expirationTime = webSocketManager.getChannelExpirationTime(voteUuid)
-                val timeLimit = expirationTime?.let { // 투표 남은 시간만큼 웹소켓 세션 timeLimit 설정
-                    val remainingTimeMillis = it - System.currentTimeMillis()
-                    if (remainingTimeMillis > 0) {
-                        (remainingTimeMillis / 1000 / 60).toInt()
-                    } else {
-                        return@let null
-                    }
-                }
+            val remainingTimeMillis = expirationTime - System.currentTimeMillis()
 
-                if (timeLimit == null) {
-                    webSocketManager.stopWebSocketForVote(voteUuid)
-                } else { // 새로운 채널 시작
-                    webSocketManager.startWebSocketForVote(voteUuid, timeLimit)
-                }
+            if (webSocketManager.restoreWebSocketSession(voteUuid) == null) { // 기존 세션이 없는 경우(첫 접속 유저) 타이머 설정 및 채널 초기화
+                webSocketManager.setWebSocketTimer(voteUuid, remainingTimeMillis)
+                webSocketManager.startWebSocketForVote(voteUuid, (remainingTimeMillis / 1000 / 60).toInt())
             }
+
+            // 새로운 세션 저장
             webSocketManager.saveWebSocketSession(voteUuid, session)
         }
     }
