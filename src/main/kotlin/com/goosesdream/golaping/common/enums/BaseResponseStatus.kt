@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.base
+package com.goosesdream.golaping.common.enums
 
 import org.springframework.http.HttpStatus
 

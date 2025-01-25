@@ -1,7 +1,7 @@
 package com.goosesdream.golaping.vote.service
 
 import com.goosesdream.golaping.common.base.BaseException
-import com.goosesdream.golaping.common.base.BaseResponseStatus.*
+import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
