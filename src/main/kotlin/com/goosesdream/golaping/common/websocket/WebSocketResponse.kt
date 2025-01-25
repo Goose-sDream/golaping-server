@@ -25,4 +25,10 @@ data class WebSocketResponse<T>(
         message = SUCCESS.message,
         result = result
     )
+
+    constructor(message: String, result: T) : this(
+        isSuccess = true,
+        message = message,
+        result = result
+    )
 }
