@@ -6,7 +6,7 @@ import com.goosesdream.golaping.user.repository.UserRepository
 import com.goosesdream.golaping.vote.repository.VoteRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import com.goosesdream.golaping.common.base.BaseResponseStatus.*
+import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.vote.entity.Participants
 import com.goosesdream.golaping.vote.entity.Votes
 import com.goosesdream.golaping.vote.repository.ParticipantRepository
@@ -31,11 +31,8 @@ class UserService(
         return newUser
     }
 
-    fun findOrCreateUser(nickname : String, voteUuid: String): Users {
-        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(INVALID_VOTE_UUID)
-        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname)
-
-        return participant?.user ?: buildAndSaveUser(nickname)
+    fun createUserForVote(nickname: String): Users {
+        return buildAndSaveUser(nickname)
     }
 
     private fun buildAndSaveUser(nickname: String): Users {

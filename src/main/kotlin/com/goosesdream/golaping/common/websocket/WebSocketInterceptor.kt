@@ -1,7 +1,7 @@
 package com.goosesdream.golaping.common.websocket
 
 import com.goosesdream.golaping.common.base.BaseException
-import com.goosesdream.golaping.common.base.BaseResponseStatus.*
+import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.vote.service.VoteService
 import org.springframework.http.server.ServerHttpRequest
