@@ -1,7 +1,7 @@
 package com.goosesdream.golaping.vote.service
 
 import com.goosesdream.golaping.common.base.BaseException
-import com.goosesdream.golaping.common.base.BaseResponseStatus.*
+import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
@@ -66,8 +66,7 @@ class VoteService(
 
     // 투표 종료 시간 조회
     fun getVoteEndTime(voteUuid: String): LocalDateTime? {
-        val vote = voteRepository.findByUuid(voteUuid)
-        return vote?.endTime
+        return voteRepository.findByUuid(voteUuid)?.endTime ?: throw BaseException(VOTE_NOT_FOUND)
     }
 
     private val voteExpirationPrefix = "vote:expiration:"
@@ -76,5 +75,9 @@ class VoteService(
         val redisKey = voteExpirationPrefix + voteUuid
         val ttlInSeconds = timeLimit * 60L
         redisService.save(redisKey, "active", ttlInSeconds)
+    }
+
+    fun getVoteLimit(voteUuid: String): Int {
+        return voteRepository.findByUuid(voteUuid)?.userVoteLimit ?: throw BaseException(VOTE_NOT_FOUND)
     }
 }

@@ -1,13 +1,12 @@
-package com.goosesdream.golaping.common.base
+package com.goosesdream.golaping.common.websocket
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.annotation.JsonPropertyOrder
-import com.goosesdream.golaping.common.enums.BaseResponseStatus
-import com.goosesdream.golaping.common.enums.BaseResponseStatus.SUCCESS
+import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
 
 @JsonPropertyOrder("isSuccess", "message", "result")
-data class BaseResponse<T>(
+data class WebSocketResponse<T>(
     @JsonProperty("isSuccess")
     val isSuccess: Boolean,
     val message: String,
@@ -15,7 +14,6 @@ data class BaseResponse<T>(
     @JsonInclude(JsonInclude.Include.NON_NULL)
     val result: T? = null
 ) {
-
     constructor() : this(
         isSuccess = true,
         message = SUCCESS.message,
@@ -23,13 +21,14 @@ data class BaseResponse<T>(
     )
 
     constructor(result: T) : this(
-        isSuccess = SUCCESS.isSuccess,
+        isSuccess = true,
         message = SUCCESS.message,
         result = result
     )
 
-    constructor(status: BaseResponseStatus) : this(
-        isSuccess = status.isSuccess,
-        message = status.message,
+    constructor(message: String, result: T) : this(
+        isSuccess = true,
+        message = message,
+        result = result
     )
 }

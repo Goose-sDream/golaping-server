@@ -48,7 +48,6 @@ class VoteController(
 
         val voteUuid = URI(voteRequest.link).path.split("/").last() // uuid 형식
 
-
         voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
@@ -57,7 +56,7 @@ class VoteController(
         userService.addParticipant(creator, voteUuid)
 
         val websocketUrl = generateWebSocketUrl(voteUuid)
-        return BaseResponse(CreateVoteResponse(websocketUrl, sessionId))
+        return BaseResponse(CreateVoteResponse(websocketUrl, sessionId)) //TODO: sessionId 쿠키에 담아 반환하도록 수정
     }
 
     fun generateWebSocketUrl(voteUuid: String): String {

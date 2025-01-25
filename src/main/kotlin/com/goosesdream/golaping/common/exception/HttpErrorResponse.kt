@@ -1,10 +1,10 @@
 package com.goosesdream.golaping.common.exception
 
-import com.goosesdream.golaping.common.base.BaseResponseStatus
+import com.goosesdream.golaping.common.enums.BaseResponseStatus
 import org.springframework.http.ResponseEntity
 import java.time.LocalDateTime
 
-data class ErrorResponse(
+data class HttpErrorResponse(
     val timestamp: LocalDateTime = LocalDateTime.now(),
     val status: Int,
     val error: String,
@@ -13,11 +13,20 @@ data class ErrorResponse(
 ) {
 
     companion object {
-        fun toResponseEntity(status: BaseResponseStatus): ResponseEntity<ErrorResponse> {
+        fun fromStatus(status: BaseResponseStatus): HttpErrorResponse {
+            return HttpErrorResponse(
+                status = status.httpStatus.value(),
+                error = status.httpStatus.name,
+                code = status.name,
+                message = status.message
+            )
+        }
+
+        fun toResponseEntity(status: BaseResponseStatus): ResponseEntity<HttpErrorResponse> {
             return ResponseEntity
                 .status(status.httpStatus)
                 .body(
-                    ErrorResponse(
+                    HttpErrorResponse(
                         status = status.httpStatus.value(),
                         error = status.httpStatus.name,
                         code = status.name,

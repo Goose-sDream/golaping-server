@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.base
+package com.goosesdream.golaping.common.enums
 
 import org.springframework.http.HttpStatus
 
@@ -25,6 +25,7 @@ enum class BaseResponseStatus(
     INVALID_VOTE_TYPE(false, HttpStatus.BAD_REQUEST, "투표 타입이 올바르지 않습니다."),
     INVALID_TIME_LIMIT(false, HttpStatus.BAD_REQUEST, "투표 제한 시간은 0분보다 커야합니다."),
     ALREADY_EXIST_CHANNEL(false, HttpStatus.BAD_REQUEST, "이미 존재하는 채널입니다."),
+    VOTE_NOT_FOUND(false, HttpStatus.BAD_REQUEST, "존재하지 않는 투표입니다."),
 
     // session
     INVALID_SESSION(false, HttpStatus.BAD_REQUEST, "유효하지 않은 세션입니다."),

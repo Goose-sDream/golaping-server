@@ -1,6 +1,7 @@
 package com.goosesdream.golaping.common.websocket
 
 import com.goosesdream.golaping.redis.service.RedisService
+import com.goosesdream.golaping.session.service.SessionService
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.stereotype.Service
 import org.springframework.web.socket.WebSocketSession
@@ -53,13 +54,20 @@ class WebSocketManager(
 
     // 채널 종료
     fun stopWebSocketForVote(voteUuid: String) {
-        redisTemplate.delete(voteUuid)
+        redisService.delete(voteSessionPrefix + voteUuid)
 
         // 타이머 취소
         webSocketTimers[voteUuid]?.cancel()
         webSocketTimers.remove(voteUuid)
 
         // WebSocket 세션 종료
+        webSocketSessions[voteUuid]?.apply {
+            try {
+                close()
+            } catch (e: Exception) {
+                println("Failed to close WebSocket session: ${e.message}")
+            }
+        }
         webSocketSessions.remove(voteUuid)
     }
 
