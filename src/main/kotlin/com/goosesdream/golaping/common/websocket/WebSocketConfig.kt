@@ -1,20 +1,25 @@
 package com.goosesdream.golaping.common.websocket
 
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.web.socket.WebSocketHandler
-import org.springframework.web.socket.config.annotation.EnableWebSocket
-import org.springframework.web.socket.config.annotation.WebSocketConfigurer
-import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
+import org.springframework.messaging.simp.config.MessageBrokerRegistry
+import org.springframework.messaging.simp.stomp.StompSessionHandler
+import org.springframework.web.socket.config.annotation.*
 
 @Configuration
-@EnableWebSocket
+@EnableWebSocketMessageBroker
 class WebSocketConfig(
-    private val webSocketInterceptor: WebSocketInterceptor,
-    private val globalWebSocketHandler: WebSocketHandler
-): WebSocketConfigurer {
-    override fun registerWebSocketHandlers(registry: WebSocketHandlerRegistry) {
-        registry.addHandler(globalWebSocketHandler, "/votes/{voteUuid}")
+    private val webSocketInterceptor: WebSocketInterceptor
+): WebSocketMessageBrokerConfigurer {
+    override fun registerStompEndpoints(registry: StompEndpointRegistry) {
+        registry.addEndpoint("/ws/votes/{voteUuid}")
             .setAllowedOrigins("*")
             .addInterceptors(webSocketInterceptor)
+            .withSockJS()
+    }
+
+    override fun configureMessageBroker(configurer: MessageBrokerRegistry) {
+        configurer.enableSimpleBroker("/topic") // 클라이언트가 구독할 경로
+        configurer.setApplicationDestinationPrefixes("/app") // 클라이언트가 요청할 경로
     }
 }

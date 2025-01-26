@@ -1,20 +1,20 @@
 package com.goosesdream.golaping.common.websocket
 
 import com.goosesdream.golaping.redis.service.RedisService
-import com.goosesdream.golaping.session.service.SessionService
 import org.springframework.data.redis.core.RedisTemplate
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
-import org.springframework.web.socket.WebSocketSession
 import java.util.*
 import java.util.concurrent.TimeUnit
 
 @Service
 class WebSocketManager(
     private val redisTemplate: RedisTemplate<String, String>,
-    private val redisService: RedisService
+    private val redisService: RedisService,
+    private val messagingTemplate: SimpMessagingTemplate
 ) {
     private val webSocketTimers = mutableMapOf<String, Timer>() // 타이머 관리
-    private val webSocketSessions = mutableMapOf<String, WebSocketSession>()  // 메모리 내 웹소켓 세션 관리
+    private val webSocketSessions = mutableMapOf<String, String>()  // 메모리 내 웹소켓 세션 관리
 
     private val voteExpirationPrefix = "vote:expiration:"
     private val voteSessionPrefix = "vote:session:"
@@ -56,21 +56,25 @@ class WebSocketManager(
     fun stopWebSocketForVote(voteUuid: String) {
         redisService.delete(voteSessionPrefix + voteUuid)
 
-        // 타이머 취소
         webSocketTimers[voteUuid]?.cancel()
         webSocketTimers.remove(voteUuid)
 
-        // WebSocket 세션 종료
-        webSocketSessions[voteUuid]?.apply {
-            try {
-                close()
-            } catch (e: Exception) {
-                println("Failed to close WebSocket session: ${e.message}")
-            }
+        val webSocketSessionId = webSocketSessions.remove(voteUuid)
+
+        if (webSocketSessionId != null) {
+            sendDisconnectMessage(webSocketSessionId)  // 연결 종료 메시지 전송
         }
-        webSocketSessions.remove(voteUuid)
     }
 
+    // 세션 종료를 위한 메시지 전송
+    fun sendDisconnectMessage(webSocketSessionId: String) {
+        try {
+            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", "투표 세션이 만료되어 웹소켓 연결이 끊어졌습니다.")
+            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", "close")
+        } catch (e: Exception) {
+            println("연결 종료 메세지 전송 실패: ${e.message}")
+        }
+    }
 
     // 채널 만료 시간 조회
     fun getChannelExpirationTime(voteUuid: String): Long? {
@@ -84,19 +88,8 @@ class WebSocketManager(
         }
     }
 
-    // 세션 복원 (Redis에서 세션 정보 복원)
-    fun restoreWebSocketSession(voteUuid: String): WebSocketSession? {
-        val sessionId = redisService.get(voteSessionPrefix + voteUuid)
-
-        return if (sessionId != null) {
-            webSocketSessions[voteUuid]
-        } else {
-            null
-        }
-    }
-
-    // 세션 저장
-    fun saveWebSocketSession(voteUuid: String, session: WebSocketSession) {
+    // 세션 Id 저장
+    fun saveWebSocketSession(voteUuid: String, sessionId: String) {
         val expirationTime = getChannelExpirationTime(voteUuid)
 
         val ttlInSeconds = expirationTime?.let {
@@ -104,8 +97,8 @@ class WebSocketManager(
         }
 
         ttlInSeconds?.let {
-            redisService.save(voteSessionPrefix + voteUuid, session.id, it)
+            redisService.save(voteSessionPrefix + voteUuid, sessionId, it)
         }
-        webSocketSessions[voteUuid] = session
+        webSocketSessions[voteUuid] = sessionId
     }
 }
