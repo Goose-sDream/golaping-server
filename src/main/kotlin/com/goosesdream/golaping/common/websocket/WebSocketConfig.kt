@@ -22,9 +22,4 @@ class WebSocketConfig(
         configurer.enableSimpleBroker("/topic") // 클라이언트가 구독할 경로
         configurer.setApplicationDestinationPrefixes("/app") // 클라이언트가 요청할 경로
     }
-
-    @Bean
-    fun stompSessionHandler(): StompSessionHandler {
-        return stompSessionHandler()
-    }
 }
