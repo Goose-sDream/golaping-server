@@ -21,16 +21,23 @@ enum class BaseResponseStatus(
     INVALID_NICKNAME(false, HttpStatus.BAD_REQUEST, "유효하지 않은 닉네임 형식입니다."),
     USER_ALREADY_PARTICIPANT(false, HttpStatus.BAD_REQUEST, "이미 참여한 사용자입니다."),
 
+    // participant
+    NOT_FOUND_PARTICIPANT(false, HttpStatus.BAD_REQUEST, "존재하지 않는 참여자입니다."),
+
     // vote
     INVALID_VOTE_TYPE(false, HttpStatus.BAD_REQUEST, "투표 타입이 올바르지 않습니다."),
     INVALID_TIME_LIMIT(false, HttpStatus.BAD_REQUEST, "투표 제한 시간은 0분보다 커야합니다."),
     ALREADY_EXIST_CHANNEL(false, HttpStatus.BAD_REQUEST, "이미 존재하는 채널입니다."),
     VOTE_NOT_FOUND(false, HttpStatus.BAD_REQUEST, "존재하지 않는 투표입니다."),
 
+    // vote option
+    INVALID_OPTION_TEXT(false, HttpStatus.BAD_REQUEST, "유효하지 않은 option text 입니다."),
+    INVALID_OPTION_COLOR(false, HttpStatus.BAD_REQUEST, "유효하지 않은 option color 입니다."),
+
     // session
     INVALID_SESSION(false, HttpStatus.BAD_REQUEST, "유효하지 않은 세션입니다."),
     UNAUTHORIZED(false, HttpStatus.UNAUTHORIZED, "인증되지 않은 사용자입니다."),
-    INVALID_VOTE_UUID(false, HttpStatus.BAD_REQUEST, "유효하지 않은 vote uuid입니다."),
+    INVALID_VOTE_UUID(false, HttpStatus.BAD_REQUEST, "유효하지 않은 vote uuid 입니다."),
     MISSING_SESSION_ID(false, HttpStatus.BAD_REQUEST, "세션 ID가 없습니다."),
 
     /**

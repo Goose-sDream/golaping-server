@@ -6,7 +6,10 @@ import com.goosesdream.golaping.common.enums.VoteType
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
+import com.goosesdream.golaping.vote.entity.VoteOptions
 import com.goosesdream.golaping.vote.entity.Votes
+import com.goosesdream.golaping.vote.repository.ParticipantRepository
+import com.goosesdream.golaping.vote.repository.VoteOptionRepository
 import com.goosesdream.golaping.vote.repository.VoteRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +18,9 @@ import java.time.LocalDateTime
 @Service
 class VoteService(
     private val voteRepository: VoteRepository,
-    private val redisService: RedisService
+    private val redisService: RedisService,
+    private val participantRepository: ParticipantRepository,
+    private val voteOptionRepository: VoteOptionRepository
 ) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
@@ -79,5 +84,21 @@ class VoteService(
 
     fun getVoteLimit(voteUuid: String): Int {
         return voteRepository.findByUuid(voteUuid)?.userVoteLimit ?: throw BaseException(VOTE_NOT_FOUND)
+    }
+
+    @Transactional(rollbackFor = [Exception::class])
+    fun addOption(voteUuid: String, nickname: String, optionText: String?, optionColor: String?): VoteOptions {
+        if (optionText.isNullOrBlank()) throw BaseException(INVALID_OPTION_TEXT)
+        if (optionColor.isNullOrBlank()) throw BaseException(INVALID_OPTION_COLOR)
+
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val creator = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(NOT_FOUND_PARTICIPANT)
+        val newOption = VoteOptions(
+            vote = vote,
+            creator = creator,
+            optionName = optionText,
+            color = optionColor
+        )
+        return voteOptionRepository.save(newOption)
     }
 }
