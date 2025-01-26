@@ -69,8 +69,8 @@ class WebSocketManager(
     // 세션 종료를 위한 메시지 전송
     fun sendDisconnectMessage(webSocketSessionId: String) {
         try {
-            messagingTemplate.convertAndSend("/topic/votes/$webSocketSessionId", "투표 세션이 만료되어 웹소켓 연결이 끊어졌습니다.")
-            messagingTemplate.convertAndSend("/topic/votes/$webSocketSessionId", "close")
+            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", "투표 세션이 만료되어 웹소켓 연결이 끊어졌습니다.")
+            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", "close")
         } catch (e: Exception) {
             println("연결 종료 메세지 전송 실패: ${e.message}")
         }
