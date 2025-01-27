@@ -55,15 +55,14 @@ class VoteWebSocketController(
     }
 
     // 투표 옵션 추가
-    @MessageMapping("/vote/addOption")
-    @SendTo("/topic/voteUpdates")
+    @MessageMapping("/vote/{voteUuid}/addOption")
+    @SendTo("/topic/vote/{voteUuid}/addOption")
     fun handleAddOption(headers: SimpMessageHeaderAccessor, message: WebSocketRequest): WebSocketResponse<Any> {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
         val voteUuid = message.voteUuid ?: throw IllegalArgumentException("MISSING_VOTE_UUID")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
         return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
-
     }
 
     // 공통 예외 처리 핸들러
