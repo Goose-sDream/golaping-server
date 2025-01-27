@@ -5,6 +5,8 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
 import com.goosesdream.golaping.common.exception.WebSocketErrorResponse
+import com.goosesdream.golaping.common.websocket.dto.AddVoteOptionRequest
+import com.goosesdream.golaping.common.websocket.dto.VoteRequest
 import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.common.websocket.dto.WebSocketRequest
 import com.goosesdream.golaping.vote.service.VoteService
@@ -41,7 +43,7 @@ class VoteWebSocketController(
         webSocketManager.saveWebSocketSession(voteUuid, webSocketSessionId)
 
         val voteLimit = voteService.getVoteLimit(voteUuid)
-        val previousVotes = voteService.getPreviousVotes(voteUuid)
+        val previousVotes = voteService.getCurrentVoteCounts(voteUuid)
         val userVoteOptionIds = voteService.getUserVoteOptionIds(voteUuid, nickname)
 
         val initialWebSocketResponse = WebSocketInitialResponse(
@@ -57,12 +59,45 @@ class VoteWebSocketController(
     // 투표 옵션 추가
     @MessageMapping("/vote/{voteUuid}/addOption")
     @SendTo("/topic/vote/{voteUuid}/addOption")
-    fun handleAddOption(headers: SimpMessageHeaderAccessor, message: WebSocketRequest): WebSocketResponse<Any> {
+    fun handleAddOption(headers: SimpMessageHeaderAccessor, message: AddVoteOptionRequest): WebSocketResponse<Any> {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
         val voteUuid = message.voteUuid ?: throw IllegalArgumentException("MISSING_VOTE_UUID")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
         return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
+    }
+
+    // 투표/투표취소
+    @MessageMapping("/vote/{voteUuid}")
+    @SendTo("/topic/vote/{voteUuid}")
+    fun handleVoteToggle(headers: SimpMessageHeaderAccessor, message: VoteRequest): WebSocketResponse<Any> {
+        val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+        val voteUuid = message.voteUuid ?: throw IllegalArgumentException("MISSING_VOTE_UUID")
+        val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
+
+        val userVote = voteService.getUserVote(voteUuid, nickname, selectedOptionId)
+
+        if (userVote != null) { // 이미 투표한 경우
+            if (userVote.status == "active") {
+                voteService.deactivateVote(userVote)
+            } else {
+                voteService.activateVote(userVote)
+            }
+        } else { // 처음 투표하는 경우
+            val userVotes = voteService.getUserVoteOptionIds(voteUuid, nickname)
+            val userVoteLimit = voteService.getVoteLimit(voteUuid)
+            if (userVotes.size >= userVoteLimit)
+                throw IllegalStateException("USER_VOTE_LIMIT_EXCEEDED")
+
+            val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
+            val voteOption = voteService.getVoteOption(selectedOptionId).orElseThrow { IllegalStateException("VOTE_OPTION_NOT_FOUND") }
+            voteService.vote(vote, nickname, voteOption)
+        }
+        // TODO: 투표 결과 조회 시, 투표 옵션별로 투표 여부 같이 반환
+        // TODO: 해당 투표의 생성자 여부 같이 반환
+
+        val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid)
+        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCounts)
     }
 
     // 공통 예외 처리 핸들러
@@ -75,6 +110,7 @@ class VoteWebSocketController(
                     "INVALID_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(INVALID_VOTE_UUID)
                     "MISSING_NICKNAME" -> WebSocketErrorResponse.fromStatus(MISSING_NICKNAME)
                     "MISSING_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(MISSING_VOTE_UUID)
+                    "MISSING_SELECTED_OPTION" -> WebSocketErrorResponse.fromStatus(MISSING_SELECTED_OPTION)
                     else -> WebSocketErrorResponse.fromStatus(GENERAL_ERROR)
                 }
             }
@@ -83,6 +119,9 @@ class VoteWebSocketController(
                     "EXPIRED_VOTE" -> WebSocketErrorResponse.fromStatus(EXPIRED_VOTE)
                     "MISSING_WEBSOCKET_SESSION_ID" -> WebSocketErrorResponse.fromStatus(MISSING_WEBSOCKET_SESSION_ID)
                     "MISSING_NICKNAME" -> WebSocketErrorResponse.fromStatus(MISSING_NICKNAME)
+                    "VOTE_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_NOT_FOUND)
+                    "VOTE_OPTION_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_OPTION_NOT_FOUND)
+                    "USER_VOTE_LIMIT_EXCEEDED" -> WebSocketErrorResponse.fromStatus(USER_VOTE_LIMIT_EXCEEDED)
                     else -> WebSocketErrorResponse.fromStatus(GENERAL_ERROR)
                 }
             }
