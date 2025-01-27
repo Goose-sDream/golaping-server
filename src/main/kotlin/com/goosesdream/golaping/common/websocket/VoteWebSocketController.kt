@@ -31,17 +31,26 @@ class VoteWebSocketController(
         }
 
         val remainingTimeMillis = expirationTime - System.currentTimeMillis()
-
         webSocketManager.setWebSocketTimer(voteUuid, remainingTimeMillis)
         webSocketManager.startWebSocketForVote(voteUuid, (remainingTimeMillis / 1000 / 60).toInt())
 
-        // TODO: 이전 투표 기록 등 반환하는 로직 추가 필요
+        val nickname = session.sessionAttributes?.get("nickname") as? String
+            ?: throw IllegalStateException("MISSING_NICKNAME")
+
         val webSocketSessionId = session.sessionId ?: throw IllegalStateException("MISSING_WEBSOCKET_SESSION_ID")
         webSocketManager.saveWebSocketSession(voteUuid, webSocketSessionId)
 
         val voteLimit = voteService.getVoteLimit(voteUuid)
-        val initialWebSocketResponse = WebSocketInitialResponse(voteLimit, expirationTime, webSocketSessionId)
+        val previousVotes = voteService.getPreviousVotes(voteUuid)
+        val userVoteOptionIds = voteService.getUserVoteOptionIds(voteUuid, nickname)
 
+        val initialWebSocketResponse = WebSocketInitialResponse(
+            voteLimit,
+            expirationTime,
+            webSocketSessionId,
+            previousVotes,
+            userVoteOptionIds
+        )
         return WebSocketResponse("연결에 성공했습니다.", initialWebSocketResponse)
     }
 
@@ -74,6 +83,7 @@ class VoteWebSocketController(
                 when (e.message) {
                     "EXPIRED_VOTE" -> WebSocketErrorResponse.fromStatus(EXPIRED_VOTE)
                     "MISSING_WEBSOCKET_SESSION_ID" -> WebSocketErrorResponse.fromStatus(MISSING_WEBSOCKET_SESSION_ID)
+                    "MISSING_NICKNAME" -> WebSocketErrorResponse.fromStatus(MISSING_NICKNAME)
                     else -> WebSocketErrorResponse.fromStatus(GENERAL_ERROR)
                 }
             }

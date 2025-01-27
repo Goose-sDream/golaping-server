@@ -22,7 +22,7 @@ enum class BaseResponseStatus(
     USER_ALREADY_PARTICIPANT(false, HttpStatus.BAD_REQUEST, "이미 참여한 사용자입니다."),
 
     // participant
-    NOT_FOUND_PARTICIPANT(false, HttpStatus.BAD_REQUEST, "존재하지 않는 참여자입니다."),
+    PARTICIPANT_NOT_FOUND(false, HttpStatus.BAD_REQUEST, "존재하지 않는 참여자입니다."),
 
     // vote
     INVALID_VOTE_TYPE(false, HttpStatus.BAD_REQUEST, "투표 타입이 올바르지 않습니다."),
@@ -33,6 +33,7 @@ enum class BaseResponseStatus(
     // vote option
     INVALID_OPTION_TEXT(false, HttpStatus.BAD_REQUEST, "유효하지 않은 option text 입니다."),
     INVALID_OPTION_COLOR(false, HttpStatus.BAD_REQUEST, "유효하지 않은 option color 입니다."),
+    VOTE_OPTION_NOT_FOUND(false, HttpStatus.BAD_REQUEST, "투표 옵션이 존재하지 않습니다."),
 
     // session
     INVALID_SESSION(false, HttpStatus.BAD_REQUEST, "유효하지 않은 세션입니다."),

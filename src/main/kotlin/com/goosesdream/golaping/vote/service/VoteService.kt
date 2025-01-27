@@ -3,12 +3,14 @@ package com.goosesdream.golaping.vote.service
 import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
+import com.goosesdream.golaping.common.websocket.dto.VoteOptionsData
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
 import com.goosesdream.golaping.vote.entity.VoteOptions
 import com.goosesdream.golaping.vote.entity.Votes
 import com.goosesdream.golaping.vote.repository.ParticipantRepository
+import com.goosesdream.golaping.vote.repository.UserVoteRepository
 import com.goosesdream.golaping.vote.repository.VoteOptionRepository
 import com.goosesdream.golaping.vote.repository.VoteRepository
 import org.springframework.stereotype.Service
@@ -20,7 +22,8 @@ class VoteService(
     private val voteRepository: VoteRepository,
     private val redisService: RedisService,
     private val participantRepository: ParticipantRepository,
-    private val voteOptionRepository: VoteOptionRepository
+    private val voteOptionRepository: VoteOptionRepository,
+    private val userVotesRepository: UserVoteRepository
 ) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
@@ -86,13 +89,14 @@ class VoteService(
         return voteRepository.findByUuid(voteUuid)?.userVoteLimit ?: throw BaseException(VOTE_NOT_FOUND)
     }
 
+    // 투표 옵션 추가
     @Transactional(rollbackFor = [Exception::class])
     fun addOption(voteUuid: String, nickname: String, optionText: String?, optionColor: String?): VoteOptions {
         if (optionText.isNullOrBlank()) throw BaseException(INVALID_OPTION_TEXT)
         if (optionColor.isNullOrBlank()) throw BaseException(INVALID_OPTION_COLOR)
 
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
-        val creator = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(NOT_FOUND_PARTICIPANT)
+        val creator = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(PARTICIPANT_NOT_FOUND)
         val newOption = VoteOptions(
             vote = vote,
             creator = creator,
@@ -100,5 +104,36 @@ class VoteService(
             color = optionColor
         )
         return voteOptionRepository.save(newOption)
+    }
+
+    // 특정 투표의 이전 투표 데이터 조회
+    fun getPreviousVotes(voteUuid: String): List<VoteOptionsData> {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val voteOptions = voteOptionRepository.findByVote(vote)
+
+        if (voteOptions.isEmpty()) {
+            return emptyList()
+        }
+
+        return voteOptions.map { voteOption ->
+            val voteCount = userVotesRepository.countByVoteOption(voteOption)
+            voteOption.voteOptionIdx?.let {
+                VoteOptionsData(
+                    optionId = it,
+                    optionName = voteOption.optionName,
+                    voteCount = voteCount
+                )
+            } ?: throw BaseException(VOTE_OPTION_NOT_FOUND)
+        }
+    }
+
+    // 특정 유저가 선택한 투표 옵션 목록 조회
+    fun getUserVoteOptionIds(voteUuid: String, nickname: String): List<Long> {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: return emptyList()
+
+        val userVotes = userVotesRepository.findByVoteAndUser(vote, participant.user)
+
+        return userVotes.map { it.voteOption.voteOptionIdx!! }
     }
 }

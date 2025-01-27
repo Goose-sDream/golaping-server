@@ -23,6 +23,7 @@ enum class WebSocketResponseStatus(
     UNKNOWN_ACTION(false, "UNKNOWN_ACTION", "알 수 없는 요청 action 입니다."),
     MISSING_NICKNAME(false, "MISSING_NICKNAME", "닉네임이 누락되었습니다."),
     MISSING_WEBSOCKET_SESSION_ID(false, "MISSING_WEBSOCKET_SESSION_ID", "웹소켓 세션 ID가 누락되었습니다."),
+    MISSING_SESSION_ID(false, "MISSING_SESSION_ID", "세션 ID가 누락되었습니다."),
 
     GENERAL_ERROR(false, "GENERAL_ERROR", "알 수 없는 오류가 발생했습니다.")
 }
