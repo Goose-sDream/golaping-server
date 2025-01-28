@@ -1,4 +1,6 @@
 FROM openjdk:21-jdk
+
+ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Seoul
 RUN apt-get update && apt-get install -y tzdata
 
