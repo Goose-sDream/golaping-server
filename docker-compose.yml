@@ -28,7 +28,7 @@ services:
       - golaping-network
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /usr/share/zoneinfo/Asia/Seoul:/etc/localtime:ro
+      - /usr/share/zoneinfo/Asia/Seoul:/etc/timezone:ro
 networks:
   golaping-network:
     driver: bridge
