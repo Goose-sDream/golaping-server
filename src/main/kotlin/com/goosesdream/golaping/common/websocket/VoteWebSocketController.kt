@@ -48,7 +48,7 @@ class VoteWebSocketController(
         webSocketManager.saveWebSocketSession(voteUuid, webSocketSessionId)
 
         val voteLimit = voteService.getVoteLimit(voteUuid)
-        val previousVotes = voteService.getCurrentVoteCounts(voteUuid, nickname)
+        val previousVotes = voteService.getPreviousVoteData(voteUuid, nickname)
 
         val initialWebSocketResponse = WebSocketInitialResponse(
             voteLimit,
