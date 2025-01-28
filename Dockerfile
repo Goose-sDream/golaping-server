@@ -1,4 +1,4 @@
-FROM openjdk:21-jdk
+FROM openjdk:21-jdk-alpine
 
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Asia/Seoul
