@@ -1,5 +1,6 @@
 package com.goosesdream.golaping.common.websocket
 
+import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
@@ -44,14 +45,12 @@ class VoteWebSocketController(
 
         val voteLimit = voteService.getVoteLimit(voteUuid)
         val previousVotes = voteService.getCurrentVoteCounts(voteUuid, nickname)
-        val userVoteOptionIds = voteService.getUserVoteOptionIds(voteUuid, nickname)
 
         val initialWebSocketResponse = WebSocketInitialResponse(
             voteLimit,
             expirationTime,
             webSocketSessionId,
-            previousVotes,
-            userVoteOptionIds
+            previousVotes
         )
         return WebSocketResponse("연결에 성공했습니다.", initialWebSocketResponse)
     }
@@ -77,8 +76,8 @@ class VoteWebSocketController(
 
         val userVote = voteService.getUserVote(voteUuid, nickname, selectedOptionId)
 
-        if (userVote != null) { // 이미 투표한 경우
-            if (userVote.status == "active") {
+        if (userVote != null) { // 해당 옵션에 이미 투표한 경우
+            if (userVote.status == ACTIVE) {
                 voteService.deactivateVote(userVote)
             } else {
                 voteService.activateVote(userVote)
@@ -93,7 +92,6 @@ class VoteWebSocketController(
             val voteOption = voteService.getVoteOption(selectedOptionId).orElseThrow { IllegalStateException("VOTE_OPTION_NOT_FOUND") }
             voteService.vote(vote, nickname, voteOption)
         }
-        // TODO: 투표 결과 조회 시, 투표 옵션별로 투표 여부 같이 반환
         // TODO: 해당 투표의 생성자 여부 같이 반환
 
         val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid, nickname)

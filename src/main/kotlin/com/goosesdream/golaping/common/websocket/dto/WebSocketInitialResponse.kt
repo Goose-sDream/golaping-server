@@ -4,6 +4,5 @@ data class WebSocketInitialResponse(
     val voteLimit: Int,
     val voteEndTime: Long,
     val webSocketSessionId: String? = null,
-    val previousVotes: List<VoteOptionsData>,
-    val userVoteOptionIds: List<Long>
+    val previousVotes: List<VoteOptionsData>
 )

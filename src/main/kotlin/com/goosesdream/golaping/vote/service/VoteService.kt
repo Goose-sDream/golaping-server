@@ -1,6 +1,8 @@
 package com.goosesdream.golaping.vote.service
 
 import com.goosesdream.golaping.common.base.BaseException
+import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
+import com.goosesdream.golaping.common.constants.Status.Companion.INACTIVE
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
 import com.goosesdream.golaping.common.websocket.dto.VoteOptionsData
@@ -84,7 +86,7 @@ class VoteService(
     fun saveVoteExpirationToRedis(voteUuid: String, timeLimit: Int) {
         val redisKey = voteExpirationPrefix + voteUuid
         val ttlInSeconds = timeLimit * 60L
-        redisService.save(redisKey, "active", ttlInSeconds)
+        redisService.save(redisKey, ACTIVE, ttlInSeconds)
     }
 
     fun getVoteLimit(voteUuid: String): Int {
@@ -119,8 +121,8 @@ class VoteService(
         }
 
         return voteOptions.map { voteOption ->
-            val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, "active")
-            val isVotedByUser = userVotesRepository.existsByVoteOptionAndUserAndStatus(voteOption, participant.user, "active")
+            val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
+            val isVotedByUser = userVotesRepository.existsByVoteOptionAndUserAndStatus(voteOption, participant.user, ACTIVE)
             voteOption.voteOptionIdx?.let {
                 VoteOptionsData(
                     optionId = it,
@@ -138,7 +140,7 @@ class VoteService(
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
         val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: return emptyList()
 
-        val userVotes = userVotesRepository.findByVoteAndUser(vote, participant.user)
+        val userVotes = userVotesRepository.findByVoteAndUserAndStatus(vote, participant.user, ACTIVE)
 
         return userVotes.map { it.voteOption.voteOptionIdx!! }
     }
@@ -160,12 +162,12 @@ class VoteService(
     }
 
     fun deactivateVote(userVote: UserVotes) {
-        userVote.status = "inactive"
+        userVote.status = INACTIVE
         userVotesRepository.save(userVote)
     }
 
     fun activateVote(userVote: UserVotes) {
-        userVote.status = "active"
+        userVote.status = ACTIVE
         userVotesRepository.save(userVote)
     }
 
