@@ -80,13 +80,11 @@ class VoteWebSocketController(
             if (userVote.status == ACTIVE) {
                 voteService.deactivateVote(userVote)
             } else {
+                validateVoteCountLimit(voteUuid, nickname)
                 voteService.activateVote(userVote)
             }
         } else { // 처음 투표하는 경우
-            val userVotes = voteService.getUserVoteOptionIds(voteUuid, nickname)
-            val userVoteLimit = voteService.getVoteLimit(voteUuid)
-            if (userVotes.size >= userVoteLimit)
-                throw IllegalStateException("USER_VOTE_LIMIT_EXCEEDED")
+            validateVoteCountLimit(voteUuid, nickname)
 
             val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
             val voteOption = voteService.getVoteOption(selectedOptionId).orElseThrow { IllegalStateException("VOTE_OPTION_NOT_FOUND") }
@@ -96,6 +94,13 @@ class VoteWebSocketController(
 
         val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid, nickname)
         return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCounts)
+    }
+
+    private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
+        val userVotes = voteService.getUserVoteOptionIds(voteUuid, nickname)
+        val userVoteLimit = voteService.getVoteLimit(voteUuid)
+        if (userVotes.size >= userVoteLimit)
+            throw IllegalStateException("USER_VOTE_LIMIT_EXCEEDED")
     }
 
     // 공통 예외 처리 핸들러
