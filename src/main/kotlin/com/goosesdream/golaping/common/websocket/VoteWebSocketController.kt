@@ -14,6 +14,9 @@ import com.goosesdream.golaping.vote.service.VoteService
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.annotation.SendToUser
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Controller
 class VoteWebSocketController(
@@ -27,6 +30,7 @@ class VoteWebSocketController(
     fun connectToVote(session: SimpMessageHeaderAccessor, message: WebSocketRequest): WebSocketResponse<Any> {
         val voteUuid = message.voteUuid ?: throw IllegalArgumentException("INVALID_VOTE_UUID")
         val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid) ?: throw IllegalStateException("EXPIRED_VOTE")
+        val expirationDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expirationTime), ZoneId.of("Asia/Seoul"))
 
         if (expirationTime <= System.currentTimeMillis()) {
             webSocketManager.stopWebSocketForVote(voteUuid)
@@ -48,7 +52,7 @@ class VoteWebSocketController(
 
         val initialWebSocketResponse = WebSocketInitialResponse(
             voteLimit,
-            expirationTime,
+            expirationDateTime,
             webSocketSessionId,
             previousVotes
         )
@@ -90,7 +94,6 @@ class VoteWebSocketController(
             val voteOption = voteService.getVoteOption(selectedOptionId).orElseThrow { IllegalStateException("VOTE_OPTION_NOT_FOUND") }
             voteService.vote(vote, nickname, voteOption)
         }
-        // TODO: 해당 투표의 생성자 여부 같이 반환
 
         val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid, nickname)
         return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCounts)
