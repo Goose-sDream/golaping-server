@@ -43,7 +43,7 @@ class VoteWebSocketController(
         webSocketManager.saveWebSocketSession(voteUuid, webSocketSessionId)
 
         val voteLimit = voteService.getVoteLimit(voteUuid)
-        val previousVotes = voteService.getCurrentVoteCounts(voteUuid)
+        val previousVotes = voteService.getCurrentVoteCounts(voteUuid, nickname)
         val userVoteOptionIds = voteService.getUserVoteOptionIds(voteUuid, nickname)
 
         val initialWebSocketResponse = WebSocketInitialResponse(
@@ -96,7 +96,7 @@ class VoteWebSocketController(
         // TODO: 투표 결과 조회 시, 투표 옵션별로 투표 여부 같이 반환
         // TODO: 해당 투표의 생성자 여부 같이 반환
 
-        val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid)
+        val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid, nickname)
         return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCounts)
     }
 

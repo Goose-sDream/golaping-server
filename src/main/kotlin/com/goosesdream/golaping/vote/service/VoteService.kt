@@ -109,9 +109,10 @@ class VoteService(
     }
 
     // 특정 투표의 투표 데이터 조회
-    fun getCurrentVoteCounts(voteUuid: String): List<VoteOptionsData> {
+    fun getCurrentVoteCounts(voteUuid: String, nickname: String): List<VoteOptionsData> {
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
         val voteOptions = voteOptionRepository.findByVote(vote)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
 
         if (voteOptions.isEmpty()) {
             return emptyList()
@@ -119,12 +120,14 @@ class VoteService(
 
         return voteOptions.map { voteOption ->
             val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, "active")
+            val isVotedByUser = userVotesRepository.existsByVoteOptionAndUserAndStatus(voteOption, participant.user, "active")
             voteOption.voteOptionIdx?.let {
                 VoteOptionsData(
                     optionId = it,
                     optionName = voteOption.optionName,
                     voteCount = voteCount,
-                    voteColor = voteOption.color
+                    voteColor = voteOption.color,
+                    isVotedByUser
                 )
             } ?: throw BaseException(VOTE_OPTION_NOT_FOUND)
         }
