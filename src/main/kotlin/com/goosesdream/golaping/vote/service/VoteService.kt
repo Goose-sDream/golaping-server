@@ -123,7 +123,8 @@ class VoteService(
                 VoteOptionsData(
                     optionId = it,
                     optionName = voteOption.optionName,
-                    voteCount = voteCount
+                    voteCount = voteCount,
+                    voteColor = voteOption.color
                 )
             } ?: throw BaseException(VOTE_OPTION_NOT_FOUND)
         }
