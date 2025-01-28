@@ -1,9 +1,10 @@
 package com.goosesdream.golaping.common.websocket.dto
 
+import java.time.LocalDateTime
+
 data class WebSocketInitialResponse(
     val voteLimit: Int,
-    val voteEndTime: Long,
+    val voteEndTime: LocalDateTime,
     val webSocketSessionId: String? = null,
-    val previousVotes: List<VoteOptionsData>,
-    val userVoteOptionIds: List<Long>
+    val previousVotes: List<VoteOptionsData>
 )

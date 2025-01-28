@@ -1,5 +1,6 @@
 package com.goosesdream.golaping.common.websocket
 
+import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
@@ -13,6 +14,9 @@ import com.goosesdream.golaping.vote.service.VoteService
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.annotation.SendToUser
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 @Controller
 class VoteWebSocketController(
@@ -26,6 +30,7 @@ class VoteWebSocketController(
     fun connectToVote(session: SimpMessageHeaderAccessor, message: WebSocketRequest): WebSocketResponse<Any> {
         val voteUuid = message.voteUuid ?: throw IllegalArgumentException("INVALID_VOTE_UUID")
         val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid) ?: throw IllegalStateException("EXPIRED_VOTE")
+        val expirationDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expirationTime), ZoneId.of("Asia/Seoul"))
 
         if (expirationTime <= System.currentTimeMillis()) {
             webSocketManager.stopWebSocketForVote(voteUuid)
@@ -43,15 +48,13 @@ class VoteWebSocketController(
         webSocketManager.saveWebSocketSession(voteUuid, webSocketSessionId)
 
         val voteLimit = voteService.getVoteLimit(voteUuid)
-        val previousVotes = voteService.getCurrentVoteCounts(voteUuid)
-        val userVoteOptionIds = voteService.getUserVoteOptionIds(voteUuid, nickname)
+        val previousVotes = voteService.getPreviousVoteData(voteUuid, nickname)
 
         val initialWebSocketResponse = WebSocketInitialResponse(
             voteLimit,
-            expirationTime,
+            expirationDateTime,
             webSocketSessionId,
-            previousVotes,
-            userVoteOptionIds
+            previousVotes
         )
         return WebSocketResponse("연결에 성공했습니다.", initialWebSocketResponse)
     }
@@ -77,27 +80,30 @@ class VoteWebSocketController(
 
         val userVote = voteService.getUserVote(voteUuid, nickname, selectedOptionId)
 
-        if (userVote != null) { // 이미 투표한 경우
-            if (userVote.status == "active") {
+        if (userVote != null) { // 해당 옵션에 이미 투표한 경우
+            if (userVote.status == ACTIVE) {
                 voteService.deactivateVote(userVote)
             } else {
+                validateVoteCountLimit(voteUuid, nickname)
                 voteService.activateVote(userVote)
             }
         } else { // 처음 투표하는 경우
-            val userVotes = voteService.getUserVoteOptionIds(voteUuid, nickname)
-            val userVoteLimit = voteService.getVoteLimit(voteUuid)
-            if (userVotes.size >= userVoteLimit)
-                throw IllegalStateException("USER_VOTE_LIMIT_EXCEEDED")
+            validateVoteCountLimit(voteUuid, nickname)
 
             val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
             val voteOption = voteService.getVoteOption(selectedOptionId).orElseThrow { IllegalStateException("VOTE_OPTION_NOT_FOUND") }
             voteService.vote(vote, nickname, voteOption)
         }
-        // TODO: 투표 결과 조회 시, 투표 옵션별로 투표 여부 같이 반환
-        // TODO: 해당 투표의 생성자 여부 같이 반환
 
-        val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid)
+        val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid, nickname)
         return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCounts)
+    }
+
+    private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
+        val userVotes = voteService.getUserVoteOptionIds(voteUuid, nickname)
+        val userVoteLimit = voteService.getVoteLimit(voteUuid)
+        if (userVotes.size >= userVoteLimit)
+            throw IllegalStateException("USER_VOTE_LIMIT_EXCEEDED")
     }
 
     // 공통 예외 처리 핸들러

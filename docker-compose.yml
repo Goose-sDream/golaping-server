@@ -19,12 +19,16 @@ services:
     container_name: golaping-container
     environment:
       - SPRING_REDIS_HOST=redis-container
+      - TZ=Asia/Seoul
     depends_on:
       - redis
     ports:
       - "8080:8080"
     networks:
       - golaping-network
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /usr/share/zoneinfo/Asia/Seoul:/etc/localtime:ro
 networks:
   golaping-network:
     driver: bridge

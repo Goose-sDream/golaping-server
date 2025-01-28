@@ -1,12 +1,16 @@
 package com.goosesdream.golaping.vote.service
 
 import com.goosesdream.golaping.common.base.BaseException
+import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
+import com.goosesdream.golaping.common.constants.Status.Companion.INACTIVE
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
 import com.goosesdream.golaping.common.websocket.dto.VoteOptionsData
+import com.goosesdream.golaping.common.websocket.dto.VoteResponse
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
+import com.goosesdream.golaping.vote.entity.Participants
 import com.goosesdream.golaping.vote.entity.UserVotes
 import com.goosesdream.golaping.vote.entity.VoteOptions
 import com.goosesdream.golaping.vote.entity.Votes
@@ -84,7 +88,7 @@ class VoteService(
     fun saveVoteExpirationToRedis(voteUuid: String, timeLimit: Int) {
         val redisKey = voteExpirationPrefix + voteUuid
         val ttlInSeconds = timeLimit * 60L
-        redisService.save(redisKey, "active", ttlInSeconds)
+        redisService.save(redisKey, ACTIVE, ttlInSeconds)
     }
 
     fun getVoteLimit(voteUuid: String): Int {
@@ -109,24 +113,55 @@ class VoteService(
     }
 
     // 특정 투표의 투표 데이터 조회
-    fun getCurrentVoteCounts(voteUuid: String): List<VoteOptionsData> {
+    fun getPreviousVoteData(voteUuid: String, nickname: String): List<VoteOptionsData> {
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
         val voteOptions = voteOptionRepository.findByVote(vote)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
 
-        if (voteOptions.isEmpty()) {
-            return emptyList()
-        }
+        if (voteOptions.isEmpty()) return emptyList()
 
+
+        return voteOptionsData(voteOptions, participant)
+    }
+
+    private fun voteOptionsData(
+        voteOptions: List<VoteOptions>,
+        participant: Participants
+    ): List<VoteOptionsData> {
         return voteOptions.map { voteOption ->
-            val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, "active")
+            val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
+            val isVotedByUser =
+                userVotesRepository.existsByVoteOptionAndUserAndStatus(voteOption, participant.user, ACTIVE)
             voteOption.voteOptionIdx?.let {
                 VoteOptionsData(
                     optionId = it,
                     optionName = voteOption.optionName,
-                    voteCount = voteCount
+                    voteCount = voteCount,
+                    voteColor = voteOption.color,
+                    isVotedByUser
                 )
             } ?: throw BaseException(VOTE_OPTION_NOT_FOUND)
         }
+    }
+
+    // 투표 데이터 조회
+    fun getCurrentVoteCounts(voteUuid: String, nickname: String): VoteResponse {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val voteOptions = voteOptionRepository.findByVote(vote)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
+
+        if (voteOptions.isEmpty()) {// 투표 옵션이 없는 경우
+            return VoteResponse(
+                isCreator = vote.creator.nickname == nickname,
+                totalVoteCount = 0,
+                voteOptions = emptyList()
+            )
+        }
+        return VoteResponse(
+            isCreator = vote.creator.nickname == nickname,
+            totalVoteCount = userVotesRepository.countByVoteAndUserAndStatus(vote, participant.user, ACTIVE),
+            voteOptions = voteOptionsData(voteOptions, participant)
+        )
     }
 
     // 특정 유저가 선택한 투표 옵션 목록 조회
@@ -134,7 +169,7 @@ class VoteService(
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
         val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: return emptyList()
 
-        val userVotes = userVotesRepository.findByVoteAndUser(vote, participant.user)
+        val userVotes = userVotesRepository.findByVoteAndUserAndStatus(vote, participant.user, ACTIVE)
 
         return userVotes.map { it.voteOption.voteOptionIdx!! }
     }
@@ -156,12 +191,12 @@ class VoteService(
     }
 
     fun deactivateVote(userVote: UserVotes) {
-        userVote.status = "inactive"
+        userVote.status = INACTIVE
         userVotesRepository.save(userVote)
     }
 
     fun activateVote(userVote: UserVotes) {
-        userVote.status = "active"
+        userVote.status = ACTIVE
         userVotesRepository.save(userVote)
     }
 
