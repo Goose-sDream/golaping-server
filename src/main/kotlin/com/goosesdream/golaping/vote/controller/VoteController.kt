@@ -5,10 +5,7 @@ import com.goosesdream.golaping.common.constants.RequestURI.Companion.VOTES
 import com.goosesdream.golaping.common.websocket.WebSocketManager
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.user.service.UserService
-import com.goosesdream.golaping.vote.dto.CreateVoteRequest
-import com.goosesdream.golaping.vote.dto.CreateVoteResponse
-import com.goosesdream.golaping.vote.dto.EnterVoteRequest
-import com.goosesdream.golaping.vote.dto.EnterVoteResponse
+import com.goosesdream.golaping.vote.dto.*
 import com.goosesdream.golaping.vote.service.VoteService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -52,11 +49,11 @@ class VoteController(
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
         val creator = userService.createUserForVote(voteRequest.nickname)
-        voteService.createVote(voteRequest, voteUuid, creator)
+        val voteIdx = voteService.createVote(voteRequest, voteUuid, creator)
         userService.addParticipant(creator, voteUuid)
 
         val websocketUrl = generateWebSocketUrl(voteUuid)
-        return BaseResponse(CreateVoteResponse(websocketUrl, sessionId)) //TODO: sessionId 쿠키에 담아 반환하도록 수정
+        return BaseResponse(CreateVoteResponse(websocketUrl, sessionId, voteIdx, voteUuid)) //TODO: sessionId 쿠키에 담아 반환하도록 수정
     }
 
     fun generateWebSocketUrl(voteUuid: String): String {

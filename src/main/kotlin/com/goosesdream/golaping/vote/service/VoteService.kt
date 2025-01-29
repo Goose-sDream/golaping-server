@@ -33,12 +33,13 @@ class VoteService(
 ) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
-    fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) { //TODO: voteType에 따라 다른 로직 구현 필요
+    fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) : Long? { //TODO: voteType에 따라 다른 로직 구현 필요
         val voteType = parseVoteType(request.type)
         validateTimeLimit(request.timeLimit)
 
         val vote = buildVote(request, creator, voteType, voteUuid)
         saveVote(vote)
+        return vote.voteIdx
     }
 
     private fun parseVoteType(type: String): VoteType {
