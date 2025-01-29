@@ -75,7 +75,7 @@ class VoteControllerTest {
         doNothing().`when`(webSocketManager).startWebSocketForVote(any(), eq(10))
 
         `when`(userService.createUserForVote(eq("testUser"))).thenReturn(creator)
-        doNothing().`when`(voteService).createVote(any(), eq(sessionId), eq(creator))
+        `when`(voteService.createVote(any(), eq(voteUuid), eq(creator))).thenReturn(1L)
 
         val result = mockMvc.perform(
             post("/api/votes")

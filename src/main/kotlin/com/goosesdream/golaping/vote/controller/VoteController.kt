@@ -1,14 +1,13 @@
 package com.goosesdream.golaping.vote.controller
 
+import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.base.BaseResponse
 import com.goosesdream.golaping.common.constants.RequestURI.Companion.VOTES
+import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.websocket.WebSocketManager
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.user.service.UserService
-import com.goosesdream.golaping.vote.dto.CreateVoteRequest
-import com.goosesdream.golaping.vote.dto.CreateVoteResponse
-import com.goosesdream.golaping.vote.dto.EnterVoteRequest
-import com.goosesdream.golaping.vote.dto.EnterVoteResponse
+import com.goosesdream.golaping.vote.dto.*
 import com.goosesdream.golaping.vote.service.VoteService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -52,11 +51,18 @@ class VoteController(
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
 
         val creator = userService.createUserForVote(voteRequest.nickname)
-        voteService.createVote(voteRequest, voteUuid, creator)
+        val voteIdx = voteService.createVote(voteRequest, voteUuid, creator)
         userService.addParticipant(creator, voteUuid)
 
         val websocketUrl = generateWebSocketUrl(voteUuid)
-        return BaseResponse(CreateVoteResponse(websocketUrl, sessionId)) //TODO: sessionId 쿠키에 담아 반환하도록 수정
+        return BaseResponse(
+            CreateVoteResponse( //TODO: sessionId 쿠키에 담아 반환하도록 수정
+                websocketUrl,
+                sessionId,
+                voteIdx,
+                voteUuid
+            )
+        )
     }
 
     fun generateWebSocketUrl(voteUuid: String): String {
@@ -75,20 +81,40 @@ class VoteController(
         val voteEndTime = voteService.getVoteEndTime(voteRequest.voteUuid)
         val currentTime = LocalDateTime.now()
         val timeLimit = Duration.between(currentTime, voteEndTime).toMinutes().toInt()
-        sessionService.saveNicknameToSession(sessionId, voteRequest.nickname, timeLimit) // 접속한 유저의 sessionId와 nickname 저장
+        sessionService.saveNicknameToSession(
+            sessionId,
+            voteRequest.nickname,
+            timeLimit
+        )
 
         val user = userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
         userService.addParticipant(user, voteRequest.voteUuid)
 
         val websocketUrl = generateWebSocketUrl(voteRequest.voteUuid)
+        setCookie(sessionId, timeLimit, response)
 
+        return BaseResponse(EnterVoteResponse(websocketUrl, voteEndTime))
+    }
+
+    private fun setCookie(
+        sessionId: String,
+        timeLimit: Int,
+        response: HttpServletResponse
+    ) {
         val cookie = Cookie("SESSIONID", sessionId)
         cookie.isHttpOnly = true
         cookie.path = "/"
         cookie.maxAge = timeLimit * 60
         response.addCookie(cookie)
+    }
 
-        return BaseResponse(EnterVoteResponse(websocketUrl, voteEndTime))
+    @GetMapping("/{voteIdx}/result")
+    @Operation(summary = "투표 결과 조회", description = "투표 결과를 조회한다.")
+    fun getVoteResult(@PathVariable voteIdx: Long): BaseResponse<VoteResultResponse> {
+        val vote = voteService.getVoteByVoteIdx(voteIdx) ?: throw BaseException(VOTE_NOT_FOUND)
+        val voteResults = voteService.getVoteResults(voteIdx)
+
+        return BaseResponse(VoteResultResponse(vote.title, voteResults))
     }
 }
 
