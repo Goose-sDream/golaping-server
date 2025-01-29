@@ -28,7 +28,10 @@ class VoteWebSocketController(
     // WebSocket 연결 후 실행
     @MessageMapping("/vote/connect")
     @SendToUser("/queue/initialResponse") // 사용자 별로 응답 전송
-    fun connectToVote(session: SimpMessageHeaderAccessor, message: WebSocketRequest): WebSocketResponse<Any> {
+    fun connectToVote(
+        session: SimpMessageHeaderAccessor,
+        message: WebSocketRequest): WebSocketResponse<Any>
+    {
         val voteUuid = message.voteUuid ?: throw IllegalArgumentException("INVALID_VOTE_UUID")
         val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid) ?: throw IllegalStateException("EXPIRED_VOTE")
         val expirationDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expirationTime), ZoneId.of("Asia/Seoul"))
