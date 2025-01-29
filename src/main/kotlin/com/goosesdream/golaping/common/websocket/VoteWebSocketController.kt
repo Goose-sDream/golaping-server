@@ -11,6 +11,7 @@ import com.goosesdream.golaping.common.websocket.dto.VoteRequest
 import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.common.websocket.dto.WebSocketRequest
 import com.goosesdream.golaping.vote.service.VoteService
+import org.springframework.messaging.handler.annotation.DestinationVariable
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.annotation.SendToUser
@@ -62,9 +63,12 @@ class VoteWebSocketController(
     // 투표 옵션 추가
     @MessageMapping("/vote/{voteUuid}/addOption")
     @SendTo("/topic/vote/{voteUuid}/addOption")
-    fun handleAddOption(headers: SimpMessageHeaderAccessor, message: AddVoteOptionRequest): WebSocketResponse<Any> {
+    fun handleAddOption(
+        @DestinationVariable voteUuid: String,
+        headers: SimpMessageHeaderAccessor,
+        message: AddVoteOptionRequest): WebSocketResponse<Any>
+    {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
-        val voteUuid = message.voteUuid ?: throw IllegalArgumentException("MISSING_VOTE_UUID")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
         return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
@@ -73,9 +77,12 @@ class VoteWebSocketController(
     // 투표/투표취소
     @MessageMapping("/vote/{voteUuid}")
     @SendTo("/topic/vote/{voteUuid}")
-    fun handleVoteToggle(headers: SimpMessageHeaderAccessor, message: VoteRequest): WebSocketResponse<Any> {
+    fun handleVoteToggle(
+        @DestinationVariable voteUuid: String,
+        headers: SimpMessageHeaderAccessor,
+        message: VoteRequest): WebSocketResponse<Any>
+    {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
-        val voteUuid = message.voteUuid ?: throw IllegalArgumentException("MISSING_VOTE_UUID")
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
         val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
