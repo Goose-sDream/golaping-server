@@ -62,7 +62,7 @@ class VoteService(
             creator = creator,
             type = voteType,
             endTime = endTime,
-            userVoteLimit = request.userVoteLimit.takeIf { it != 0 },
+            userVoteLimit = if (request.userVoteLimit == 0) null else request.userVoteLimit,
             link = request.link,
             uuid = voteUuid
         )
@@ -91,8 +91,8 @@ class VoteService(
         redisService.save(redisKey, ACTIVE, ttlInSeconds)
     }
 
-    fun getVoteLimit(voteUuid: String): Int {
-        return voteRepository.findByUuid(voteUuid)?.userVoteLimit ?: throw BaseException(VOTE_NOT_FOUND)
+    fun getVoteLimit(voteUuid: String): Int? {
+        return voteRepository.findByUuid(voteUuid)?.userVoteLimit
     }
 
     // 투표 옵션 추가
