@@ -21,18 +21,13 @@ class WebSocketManager(
 
     // 투표 UUID에 대한 WebSocket 세션 시작
     fun startWebSocketForVote(voteUuid: String, timeLimit: Int) {
-        val expirationTime = getChannelExpirationTime(voteUuid)
+        val expirationTime = getChannelExpirationTime(voteUuid) ?: return stopWebSocketForVote(voteUuid)
 
-        if (expirationTime != null) {
-            val remainingTimeMillis = expirationTime - System.currentTimeMillis()
-
-            if (remainingTimeMillis > 0) {
-                setWebSocketTimer(voteUuid, remainingTimeMillis) // 타이머 설정
-            } else { // 이미 만료된 경우 바로 종료 처리
-                stopWebSocketForVote(voteUuid)
-            }
-        } else {
+        val remainingTimeMillis = expirationTime - System.currentTimeMillis()
+        if (remainingTimeMillis <= 0) {
             stopWebSocketForVote(voteUuid)
+        } else {
+            setWebSocketTimer(voteUuid, remainingTimeMillis) // 타이머 설정
         }
     }
 
