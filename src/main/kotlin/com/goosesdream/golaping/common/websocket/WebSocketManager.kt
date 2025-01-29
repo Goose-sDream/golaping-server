@@ -21,40 +21,40 @@ class WebSocketManager(
 
     // 투표 UUID에 대한 WebSocket 세션 시작
     fun startWebSocketForVote(voteUuid: String, timeLimit: Int) {
-        val expirationTime = getChannelExpirationTime(voteUuid)
+        val expirationTime = getChannelExpirationTime(voteUuid) ?: return stopWebSocketForVote(voteUuid)
 
-        if (expirationTime != null) {
-            val remainingTimeMillis = expirationTime - System.currentTimeMillis()
-
-            if (remainingTimeMillis > 0) {
-                setWebSocketTimer(voteUuid, remainingTimeMillis) // 타이머 설정
-            } else { // 이미 만료된 경우 바로 종료 처리
-                stopWebSocketForVote(voteUuid)
-            }
-        } else {
+        val remainingTimeMillis = expirationTime - System.currentTimeMillis()
+        if (remainingTimeMillis <= 0) {
             stopWebSocketForVote(voteUuid)
+        } else {
+            setWebSocketTimer(voteUuid, remainingTimeMillis) // 타이머 설정
         }
     }
 
     // WebSocket 타이머 설정
     fun setWebSocketTimer(voteUuid: String, remainingTimeMillis: Long) {
-        if (webSocketTimers.containsKey(voteUuid)) {
-            return // 이미 타이머가 설정되어 있으면 중복 생성 방지
-        }
-
-        val timer = Timer()
-        timer.schedule(object : TimerTask() {
-            override fun run() {
-                stopWebSocketForVote(voteUuid)
+        synchronized(this) {
+            if (webSocketTimers.containsKey(voteUuid)) {
+                return // 이미 타이머가 설정되어 있으면 중복 생성 방지
             }
-        }, remainingTimeMillis)
 
-        webSocketTimers[voteUuid] = timer
+            val timer = Timer()
+            timer.schedule(object : TimerTask() {
+                override fun run() {
+                    stopWebSocketForVote(voteUuid)
+                }
+            }, remainingTimeMillis)
+
+            webSocketTimers[voteUuid] = timer
+        }
     }
 
     // 채널 종료
     fun stopWebSocketForVote(voteUuid: String) {
-        redisService.delete(voteSessionPrefix + voteUuid)
+        val redisKey = voteSessionPrefix + voteUuid
+        if (redisService.exists(redisKey)) {
+            redisService.delete(redisKey)
+        }
 
         webSocketTimers[voteUuid]?.cancel()
         webSocketTimers.remove(voteUuid)
@@ -69,8 +69,11 @@ class WebSocketManager(
     // 세션 종료를 위한 메시지 전송
     fun sendDisconnectMessage(webSocketSessionId: String) {
         try {
-            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", "투표 세션이 만료되어 웹소켓 연결이 끊어졌습니다.")
-            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", "close")
+            val message = mapOf(
+                "message" to "투표 세션이 만료되어 웹소켓 연결이 끊어졌습니다.",
+                "status" to "closed"
+            )
+            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", message)
         } catch (e: Exception) {
             println("연결 종료 메세지 전송 실패: ${e.message}")
         }

@@ -221,14 +221,14 @@ class VoteService(
         )
     }
 
+    // 투표 결과 조회
     fun getVoteResults(voteIdx: Long): List<VoteResultData> {
         val vote = voteRepository.findById(voteIdx).orElseThrow { BaseException(VOTE_NOT_FOUND) }
-        val voteOptions = voteOptionRepository.findByVote(vote)
+        val voteOptions = getVoteOptions(vote)
 
         if (voteOptions.isEmpty()) return emptyList()
 
-        val voteCounts = userVotesRepository.countVotesByVoteOptionsAndStatus(voteOptions, ACTIVE)
-            .associate { (optionId, count) -> (optionId as Long) to (count as Int) }
+        val voteCounts = getVoteCounts(voteOptions)
 
         var currentRank = 1
         var previousCount: Int? = null
@@ -251,4 +251,31 @@ class VoteService(
             }
         return sortedResults
     }
+
+    // 투표 종료
+    fun closeVote(vote: Votes, nickname: String): List<VoteResultData> {
+        val user = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(PARTICIPANT_NOT_FOUND)
+        if (user != vote.creator) throw BaseException(NOT_CREATOR)
+
+        if (vote.status == INACTIVE) throw BaseException(EXPIRED_VOTE)
+        vote.status = INACTIVE
+        voteRepository.save(vote)
+
+        return getVoteResults(vote.voteIdx!!)
+    }
+
+    private fun getVoteOptions(vote: Votes): List<VoteOptions> {
+        return voteOptionRepository.findByVote(vote)
+    }
+
+    private fun getVoteCounts(voteOptions: List<VoteOptions>): Map<Long, Int> {
+        return userVotesRepository.countVotesByVoteOptionsAndStatus(voteOptions, ACTIVE)
+            .associate { (optionId, count) -> (optionId as Long) to (count as Int) }
+    }
+
+    // TODO: 투표 참여자들에게 브로드캐스트
+    fun notifyParticipants(vote: Votes) {
+
+    }
+
 }

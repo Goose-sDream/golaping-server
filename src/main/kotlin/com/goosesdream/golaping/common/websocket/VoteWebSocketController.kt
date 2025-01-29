@@ -10,7 +10,9 @@ import com.goosesdream.golaping.common.websocket.dto.AddVoteOptionRequest
 import com.goosesdream.golaping.common.websocket.dto.VoteRequest
 import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.common.websocket.dto.WebSocketRequest
+import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
+import org.springframework.messaging.handler.annotation.DestinationVariable
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.annotation.SendToUser
@@ -27,7 +29,10 @@ class VoteWebSocketController(
     // WebSocket 연결 후 실행
     @MessageMapping("/vote/connect")
     @SendToUser("/queue/initialResponse") // 사용자 별로 응답 전송
-    fun connectToVote(session: SimpMessageHeaderAccessor, message: WebSocketRequest): WebSocketResponse<Any> {
+    fun connectToVote(
+        session: SimpMessageHeaderAccessor,
+        message: WebSocketRequest): WebSocketResponse<Any>
+    {
         val voteUuid = message.voteUuid ?: throw IllegalArgumentException("INVALID_VOTE_UUID")
         val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid) ?: throw IllegalStateException("EXPIRED_VOTE")
         val expirationDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expirationTime), ZoneId.of("Asia/Seoul"))
@@ -62,9 +67,12 @@ class VoteWebSocketController(
     // 투표 옵션 추가
     @MessageMapping("/vote/{voteUuid}/addOption")
     @SendTo("/topic/vote/{voteUuid}/addOption")
-    fun handleAddOption(headers: SimpMessageHeaderAccessor, message: AddVoteOptionRequest): WebSocketResponse<Any> {
+    fun handleAddOption(
+        @DestinationVariable voteUuid: String,
+        headers: SimpMessageHeaderAccessor,
+        message: AddVoteOptionRequest): WebSocketResponse<Any>
+    {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
-        val voteUuid = message.voteUuid ?: throw IllegalArgumentException("MISSING_VOTE_UUID")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
         return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
@@ -73,9 +81,12 @@ class VoteWebSocketController(
     // 투표/투표취소
     @MessageMapping("/vote/{voteUuid}")
     @SendTo("/topic/vote/{voteUuid}")
-    fun handleVoteToggle(headers: SimpMessageHeaderAccessor, message: VoteRequest): WebSocketResponse<Any> {
+    fun handleVoteToggle(
+        @DestinationVariable voteUuid: String,
+        headers: SimpMessageHeaderAccessor,
+        message: VoteRequest): WebSocketResponse<Any>
+    {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
-        val voteUuid = message.voteUuid ?: throw IllegalArgumentException("MISSING_VOTE_UUID")
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
         val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
@@ -109,6 +120,22 @@ class VoteWebSocketController(
 
         if (userVoteLimit != null && userVotes.size >= userVoteLimit)
             throw IllegalStateException("USER_VOTE_LIMIT_EXCEEDED")
+    }
+
+    // [생성자] 투표 제한 시간 도달 전 미리 투표 종료
+    @MessageMapping("/vote/{voteUuid}/close")
+    @SendTo("/topic/vote/{voteUuid}/closed")
+    fun closeVote(
+        @DestinationVariable voteUuid: String,
+        headers: SimpMessageHeaderAccessor): WebSocketResponse<Any>
+    {
+        val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
+        val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+
+        val voteResults = voteService.closeVote(vote, nickname)
+        webSocketManager.stopWebSocketForVote(voteUuid) // TODO: 이거 로직 확인
+
+        return WebSocketResponse("투표가 종료되었습니다.", VoteResultResponse(vote.title, voteResults))
     }
 
     // 공통 예외 처리 핸들러
