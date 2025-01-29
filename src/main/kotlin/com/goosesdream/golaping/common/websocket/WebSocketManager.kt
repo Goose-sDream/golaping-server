@@ -54,7 +54,10 @@ class WebSocketManager(
 
     // 채널 종료
     fun stopWebSocketForVote(voteUuid: String) {
-        redisService.delete(voteSessionPrefix + voteUuid)
+        val redisKey = voteSessionPrefix + voteUuid
+        if (redisService.exists(redisKey)) {
+            redisService.delete(redisKey)
+        }
 
         webSocketTimers[voteUuid]?.cancel()
         webSocketTimers.remove(voteUuid)
