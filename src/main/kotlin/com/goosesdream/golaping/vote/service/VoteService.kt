@@ -11,7 +11,6 @@ import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
 import com.goosesdream.golaping.vote.dto.VoteResultData
-import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.entity.Participants
 import com.goosesdream.golaping.vote.entity.UserVotes
 import com.goosesdream.golaping.vote.entity.VoteOptions
