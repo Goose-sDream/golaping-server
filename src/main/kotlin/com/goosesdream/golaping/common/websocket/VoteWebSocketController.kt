@@ -10,6 +10,7 @@ import com.goosesdream.golaping.common.websocket.dto.AddVoteOptionRequest
 import com.goosesdream.golaping.common.websocket.dto.VoteRequest
 import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.common.websocket.dto.WebSocketRequest
+import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
 import org.springframework.messaging.handler.annotation.DestinationVariable
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
@@ -119,6 +120,22 @@ class VoteWebSocketController(
 
         if (userVoteLimit != null && userVotes.size >= userVoteLimit)
             throw IllegalStateException("USER_VOTE_LIMIT_EXCEEDED")
+    }
+
+    // [생성자] 투표 제한 시간 도달 전 미리 투표 종료
+    @MessageMapping("/vote/{voteUuid}/close")
+    @SendTo("/topic/vote/{voteUuid}/closed")
+    fun closeVote(
+        @DestinationVariable voteUuid: String,
+        headers: SimpMessageHeaderAccessor): WebSocketResponse<Any>
+    {
+        val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
+        val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+
+        val voteResults = voteService.closeVote(vote, nickname)
+        webSocketManager.stopWebSocketForVote(voteUuid) // TODO: 이거 로직 확인
+
+        return WebSocketResponse("투표가 종료되었습니다.", VoteResultResponse(vote.title, voteResults))
     }
 
     // 공통 예외 처리 핸들러
