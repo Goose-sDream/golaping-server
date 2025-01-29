@@ -38,18 +38,20 @@ class WebSocketManager(
 
     // WebSocket 타이머 설정
     fun setWebSocketTimer(voteUuid: String, remainingTimeMillis: Long) {
-        if (webSocketTimers.containsKey(voteUuid)) {
-            return // 이미 타이머가 설정되어 있으면 중복 생성 방지
-        }
-
-        val timer = Timer()
-        timer.schedule(object : TimerTask() {
-            override fun run() {
-                stopWebSocketForVote(voteUuid)
+        synchronized(this) {
+            if (webSocketTimers.containsKey(voteUuid)) {
+                return // 이미 타이머가 설정되어 있으면 중복 생성 방지
             }
-        }, remainingTimeMillis)
 
-        webSocketTimers[voteUuid] = timer
+            val timer = Timer()
+            timer.schedule(object : TimerTask() {
+                override fun run() {
+                    stopWebSocketForVote(voteUuid)
+                }
+            }, remainingTimeMillis)
+
+            webSocketTimers[voteUuid] = timer
+        }
     }
 
     // 채널 종료
