@@ -10,6 +10,8 @@ import com.goosesdream.golaping.common.websocket.dto.VoteResponse
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
+import com.goosesdream.golaping.vote.dto.VoteResultData
+import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.entity.Participants
 import com.goosesdream.golaping.vote.entity.UserVotes
 import com.goosesdream.golaping.vote.entity.VoteOptions
@@ -179,6 +181,10 @@ class VoteService(
         return voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
     }
 
+    fun getVoteByVoteIdx(voteIdx: Long): Votes? {
+        return voteRepository.findById(voteIdx).orElse(null)
+    }
+
     fun getVoteOption(selectedOptionId: Long): Optional<VoteOptions> {
         return voteOptionRepository.findById(selectedOptionId)
     }
@@ -214,5 +220,36 @@ class VoteService(
             user = user,
             voteOption = voteOption
         )
+    }
+
+    fun getVoteResults(voteIdx: Long): List<VoteResultData> {
+        val vote = voteRepository.findById(voteIdx).orElseThrow { BaseException(VOTE_NOT_FOUND) }
+        val voteOptions = voteOptionRepository.findByVote(vote)
+
+        if (voteOptions.isEmpty()) return emptyList()
+
+        val voteCounts = userVotesRepository.countVotesByVoteOptionsAndStatus(voteOptions, ACTIVE)
+            .associate { (optionId, count) -> (optionId as Long) to (count as Int) }
+
+        var currentRank = 1
+        var previousCount: Int? = null
+
+        val sortedResults = voteOptions.map { option ->
+            VoteResultData(
+                ranking = 0,
+                optionId = option.voteOptionIdx!!,
+                optionName = option.optionName,
+                voteCount = voteCounts[option.voteOptionIdx] ?: 0,
+                voteColor = option.color
+            )
+        }.sortedByDescending { it.voteCount }
+            .onEachIndexed { index, result ->
+                if (previousCount == null || result.voteCount != previousCount) {
+                    currentRank = index + 1
+                }
+                previousCount = result.voteCount
+                result.ranking = currentRank
+            }
+        return sortedResults
     }
 }
