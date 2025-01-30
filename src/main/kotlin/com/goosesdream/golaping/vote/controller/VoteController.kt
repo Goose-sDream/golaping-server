@@ -9,8 +9,8 @@ import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.user.service.UserService
 import com.goosesdream.golaping.vote.dto.*
 import com.goosesdream.golaping.vote.service.VoteService
+import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -21,15 +21,15 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
 
+@Hidden
 @RestController
 @RequestMapping(VOTES)
-@Tag(name = "Vote", description = "투표 관련 API")
 class VoteController(
     private val voteService: VoteService,
     private val sessionService: SessionService,
     private val webSocketManager: WebSocketManager,
     private val userService: UserService
-) {
+) : VoteControllerInterface{
     @Value("\${websocket.base-url}")
     private lateinit var websocketBaseUrl: String
 
@@ -38,7 +38,7 @@ class VoteController(
 
     @PostMapping
     @Operation(summary = "투표 생성", description = "새로운 투표를 생성하고, WebSocket URL과 SessionID를 반환한다.")
-    fun createVote(
+    override fun createVote(
         @RequestBody voteRequest: CreateVoteRequest,
         request: HttpServletRequest
     ): BaseResponse<CreateVoteResponse> {
@@ -71,7 +71,7 @@ class VoteController(
 
     @PostMapping("/enter")
     @Operation(summary = "닉네임 입력", description = "닉네임을 입력받고, websocketUrl과 SessionID, voteEndTime을 반환한다.")
-    fun enterVote(
+    override fun enterVote(
         @RequestBody voteRequest: EnterVoteRequest,
         request: HttpServletRequest,
         response: HttpServletResponse
@@ -110,7 +110,7 @@ class VoteController(
 
     @GetMapping("/{voteIdx}/result")
     @Operation(summary = "투표 결과 조회", description = "투표 결과를 조회한다.")
-    fun getVoteResult(@PathVariable voteIdx: Long): BaseResponse<VoteResultResponse> {
+    override fun getVoteResult(@PathVariable voteIdx: Long): BaseResponse<VoteResultResponse> {
         val vote = voteService.getVoteByVoteIdx(voteIdx) ?: throw BaseException(VOTE_NOT_FOUND)
         val voteResults = voteService.getVoteResults(voteIdx)
 
