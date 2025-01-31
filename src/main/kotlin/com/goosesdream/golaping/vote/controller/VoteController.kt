@@ -66,7 +66,7 @@ class VoteController(
     }
 
     fun generateWebSocketUrl(voteUuid: String): String {
-        return "$websocketBaseUrl$websocketPath/$voteUuid"
+        return "$websocketBaseUrl/ws$websocketPath/$voteUuid"
     }
 
     @PostMapping("/enter")
