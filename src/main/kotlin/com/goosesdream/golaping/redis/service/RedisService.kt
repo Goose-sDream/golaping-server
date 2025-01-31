@@ -19,4 +19,8 @@ class RedisService(
     fun delete(key: String) {
         redisTemplate.delete(key)
     }
+
+    fun exists(key: String): Boolean {
+        return redisTemplate.hasKey(key)
+    }
 }

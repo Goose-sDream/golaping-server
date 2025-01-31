@@ -33,7 +33,7 @@ import java.util.*
 @AutoConfigureMockMvc
 @TestPropertySource(properties = [
     "websocket.base-url=ws://localhost:8080",
-    "websocket.path=/ws"
+    "websocket.path=/votes"
 ])
 class VoteControllerTest {
 
@@ -66,16 +66,18 @@ class VoteControllerTest {
             link = "http://example.com/vote/12345"
         )
 
-        val sessionId = UUID.randomUUID().toString()
         val voteUuid = "12345"
-        val websocketUrl = "ws://localhost:8080/ws/$voteUuid"
+        val websocketBaseUrl = "ws://localhost:8080"
+        val websocketPath = "/votes"
+        val websocketUrl = "$websocketBaseUrl/ws$websocketPath/$voteUuid"
+
         val creator = Users(nickname = "testUser")
 
         doNothing().`when`(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         doNothing().`when`(webSocketManager).startWebSocketForVote(any(), eq(10))
 
         `when`(userService.createUserForVote(eq("testUser"))).thenReturn(creator)
-        doNothing().`when`(voteService).createVote(any(), eq(sessionId), eq(creator))
+        `when`(voteService.createVote(any(), eq(voteUuid), eq(creator))).thenReturn(1L)
 
         val result = mockMvc.perform(
             post("/api/votes")
@@ -84,7 +86,7 @@ class VoteControllerTest {
         )
             .andExpect(status().isOk())  // 200 응답을 기대
             .andExpect(jsonPath("$.isSuccess").value(true))
-            .andExpect(jsonPath("$.result.websocketUrl").value("ws://localhost:8080/ws/12345"))
+            .andExpect(jsonPath("$.result.websocketUrl").value(websocketUrl))
             .andExpect(jsonPath("$.result.sessionId").value(Matchers.matchesPattern("^[0-9a-fA-F-]{36}$")))
             .andReturn()
 

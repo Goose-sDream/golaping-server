@@ -10,6 +10,7 @@ import com.goosesdream.golaping.common.websocket.dto.VoteResponse
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
+import com.goosesdream.golaping.vote.dto.VoteResultData
 import com.goosesdream.golaping.vote.entity.Participants
 import com.goosesdream.golaping.vote.entity.UserVotes
 import com.goosesdream.golaping.vote.entity.VoteOptions
@@ -33,12 +34,13 @@ class VoteService(
 ) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
-    fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) { //TODO: voteType에 따라 다른 로직 구현 필요
+    fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) : Long? { //TODO: voteType에 따라 다른 로직 구현 필요
         val voteType = parseVoteType(request.type)
         validateTimeLimit(request.timeLimit)
 
         val vote = buildVote(request, creator, voteType, voteUuid)
         saveVote(vote)
+        return vote.voteIdx
     }
 
     private fun parseVoteType(type: String): VoteType {
@@ -62,7 +64,7 @@ class VoteService(
             creator = creator,
             type = voteType,
             endTime = endTime,
-            userVoteLimit = request.userVoteLimit.takeIf { it != 0 },
+            userVoteLimit = if (request.userVoteLimit == 0) null else request.userVoteLimit,
             link = request.link,
             uuid = voteUuid
         )
@@ -91,8 +93,8 @@ class VoteService(
         redisService.save(redisKey, ACTIVE, ttlInSeconds)
     }
 
-    fun getVoteLimit(voteUuid: String): Int {
-        return voteRepository.findByUuid(voteUuid)?.userVoteLimit ?: throw BaseException(VOTE_NOT_FOUND)
+    fun getVoteLimit(voteUuid: String): Int? {
+        return voteRepository.findByUuid(voteUuid)?.userVoteLimit
     }
 
     // 투표 옵션 추가
@@ -178,6 +180,10 @@ class VoteService(
         return voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
     }
 
+    fun getVoteByVoteIdx(voteIdx: Long): Votes? {
+        return voteRepository.findById(voteIdx).orElse(null)
+    }
+
     fun getVoteOption(selectedOptionId: Long): Optional<VoteOptions> {
         return voteOptionRepository.findById(selectedOptionId)
     }
@@ -214,4 +220,62 @@ class VoteService(
             voteOption = voteOption
         )
     }
+
+    // 투표 결과 조회
+    fun getVoteResults(voteIdx: Long): List<VoteResultData> {
+        val vote = voteRepository.findById(voteIdx).orElseThrow { BaseException(VOTE_NOT_FOUND) }
+        val voteOptions = getVoteOptions(vote)
+
+        if (voteOptions.isEmpty()) return emptyList()
+
+        val voteCounts = getVoteCounts(voteOptions)
+
+        var currentRank = 1
+        var previousCount: Int? = null
+
+        val sortedResults = voteOptions.map { option ->
+            VoteResultData(
+                ranking = 0,
+                optionId = option.voteOptionIdx!!,
+                optionName = option.optionName,
+                voteCount = voteCounts[option.voteOptionIdx] ?: 0,
+                voteColor = option.color
+            )
+        }.sortedByDescending { it.voteCount }
+            .onEachIndexed { index, result ->
+                if (previousCount == null || result.voteCount != previousCount) {
+                    currentRank = index + 1
+                }
+                previousCount = result.voteCount
+                result.ranking = currentRank
+            }
+        return sortedResults
+    }
+
+    // 투표 종료
+    fun closeVote(vote: Votes, nickname: String): List<VoteResultData> {
+        val user = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(PARTICIPANT_NOT_FOUND)
+        if (user != vote.creator) throw BaseException(NOT_CREATOR)
+
+        if (vote.status == INACTIVE) throw BaseException(EXPIRED_VOTE)
+        vote.status = INACTIVE
+        voteRepository.save(vote)
+
+        return getVoteResults(vote.voteIdx!!)
+    }
+
+    private fun getVoteOptions(vote: Votes): List<VoteOptions> {
+        return voteOptionRepository.findByVote(vote)
+    }
+
+    private fun getVoteCounts(voteOptions: List<VoteOptions>): Map<Long, Int> {
+        return userVotesRepository.countVotesByVoteOptionsAndStatus(voteOptions, ACTIVE)
+            .associate { (optionId, count) -> (optionId as Long) to (count as Int) }
+    }
+
+    // TODO: 투표 참여자들에게 브로드캐스트
+    fun notifyParticipants(vote: Votes) {
+
+    }
+
 }
