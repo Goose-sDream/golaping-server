@@ -10,7 +10,6 @@ import com.goosesdream.golaping.common.websocket.dto.WebSocketResponse
 import com.goosesdream.golaping.common.websocket.dto.AddVoteOptionRequest
 import com.goosesdream.golaping.common.websocket.dto.VoteRequest
 import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
-import com.goosesdream.golaping.common.websocket.dto.WebSocketRequest
 import com.goosesdream.golaping.common.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
