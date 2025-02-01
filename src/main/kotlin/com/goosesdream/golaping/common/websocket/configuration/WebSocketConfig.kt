@@ -1,9 +1,8 @@
-package com.goosesdream.golaping.common.websocket
+package com.goosesdream.golaping.common.websocket.configuration
 
-import org.springframework.context.annotation.Bean
+import com.goosesdream.golaping.common.websocket.interceptor.WebSocketInterceptor
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
-import org.springframework.messaging.simp.stomp.StompSessionHandler
 import org.springframework.web.socket.config.annotation.*
 
 @Configuration

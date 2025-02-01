@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket
+package com.goosesdream.golaping.common.websocket.service
 
 import com.goosesdream.golaping.redis.service.RedisService
 import org.springframework.data.redis.core.RedisTemplate

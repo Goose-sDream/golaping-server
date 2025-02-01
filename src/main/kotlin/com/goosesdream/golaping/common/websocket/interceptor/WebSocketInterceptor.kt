@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket
+package com.goosesdream.golaping.common.websocket.interceptor
 
 import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*

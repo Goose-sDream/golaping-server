@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket
+package com.goosesdream.golaping.common.websocket.controller
 
 import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -6,10 +6,12 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
 import com.goosesdream.golaping.common.exception.WebSocketErrorResponse
+import com.goosesdream.golaping.common.websocket.dto.WebSocketResponse
 import com.goosesdream.golaping.common.websocket.dto.AddVoteOptionRequest
 import com.goosesdream.golaping.common.websocket.dto.VoteRequest
 import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.common.websocket.dto.WebSocketRequest
+import com.goosesdream.golaping.common.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
 import org.springframework.messaging.handler.annotation.DestinationVariable
@@ -23,16 +25,14 @@ import java.time.ZoneId
 @Controller
 class VoteWebSocketController(
     private val webSocketManager: WebSocketManager,
-    private val voteService: VoteService
-) {
+    private val voteService: VoteService) {
 
     // WebSocket 연결 후 실행
     @MessageMapping("/vote/connect")
     @SendToUser("/queue/initialResponse") // 사용자 별로 응답 전송
     fun connectToVote(
         session: SimpMessageHeaderAccessor,
-        message: WebSocketRequest): WebSocketResponse<Any>
-    {
+        message: WebSocketRequest): WebSocketResponse<Any> {
         val voteUuid = message.voteUuid ?: throw IllegalArgumentException("INVALID_VOTE_UUID")
         val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid) ?: throw IllegalStateException("EXPIRED_VOTE")
         val expirationDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expirationTime), ZoneId.of("Asia/Seoul"))
@@ -70,8 +70,7 @@ class VoteWebSocketController(
     fun handleAddOption(
         @DestinationVariable voteUuid: String,
         headers: SimpMessageHeaderAccessor,
-        message: AddVoteOptionRequest): WebSocketResponse<Any>
-    {
+        message: AddVoteOptionRequest): WebSocketResponse<Any> {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
@@ -84,8 +83,7 @@ class VoteWebSocketController(
     fun handleVoteToggle(
         @DestinationVariable voteUuid: String,
         headers: SimpMessageHeaderAccessor,
-        message: VoteRequest): WebSocketResponse<Any>
-    {
+        message: VoteRequest): WebSocketResponse<Any> {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
@@ -127,13 +125,12 @@ class VoteWebSocketController(
     @SendTo("/topic/vote/{voteUuid}/closed")
     fun closeVote(
         @DestinationVariable voteUuid: String,
-        headers: SimpMessageHeaderAccessor): WebSocketResponse<Any>
-    {
+        headers: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
         val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val voteResults = voteService.closeVote(vote, nickname)
-        webSocketManager.stopWebSocketForVote(voteUuid) // TODO: 이거 로직 확인
+        webSocketManager.stopWebSocketForVote(voteUuid)
 
         return WebSocketResponse("투표가 종료되었습니다.", VoteResultResponse(vote.title, voteResults))
     }

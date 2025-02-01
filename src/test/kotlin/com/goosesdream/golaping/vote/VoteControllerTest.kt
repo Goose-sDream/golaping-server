@@ -1,6 +1,6 @@
 package com.goosesdream.golaping.vote
 
-import com.goosesdream.golaping.common.websocket.WebSocketManager
+import com.goosesdream.golaping.common.websocket.service.WebSocketManager
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.vote.service.VoteService
 import org.junit.jupiter.api.Test
@@ -27,7 +27,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.util.*
 
 @SpringBootTest
 @AutoConfigureMockMvc
