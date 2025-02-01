@@ -1,6 +1,6 @@
 package com.goosesdream.golaping.vote
 
-import com.goosesdream.golaping.common.websocket.WebSocketManager
+import com.goosesdream.golaping.common.websocket.service.WebSocketManager
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.vote.service.VoteService
 import org.junit.jupiter.api.Test
@@ -27,13 +27,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.util.*
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = [
-    "websocket.base-url=ws://localhost:8080",
-    "websocket.path=/votes"
+    "websocket.base-url=http://localhost:8080",
+    "websocket.path=/ws/votes"
 ])
 class VoteControllerTest {
 
@@ -67,9 +66,9 @@ class VoteControllerTest {
         )
 
         val voteUuid = "12345"
-        val websocketBaseUrl = "ws://localhost:8080"
-        val websocketPath = "/votes"
-        val websocketUrl = "$websocketBaseUrl/ws$websocketPath/$voteUuid"
+        val websocketBaseUrl = "http://localhost:8080"
+        val websocketPath = "/ws/votes"
+        val websocketUrl = "$websocketBaseUrl$websocketPath"
 
         val creator = Users(nickname = "testUser")
 

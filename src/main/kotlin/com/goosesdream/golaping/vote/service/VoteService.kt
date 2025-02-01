@@ -30,8 +30,7 @@ class VoteService(
     private val redisService: RedisService,
     private val participantRepository: ParticipantRepository,
     private val voteOptionRepository: VoteOptionRepository,
-    private val userVotesRepository: UserVoteRepository
-) {
+    private val userVotesRepository: UserVoteRepository) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
     fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) : Long? { //TODO: voteType에 따라 다른 로직 구현 필요
@@ -76,8 +75,8 @@ class VoteService(
 
     // 투표 종료 여부 확인
     fun checkVoteEnded(voteUuid: String): Boolean {
-        val vote = voteRepository.findByUuid(voteUuid)
-        return vote?.endTime?.isBefore(LocalDateTime.now()) ?: true
+        val vote = voteRepository.findByUuid(voteUuid) ?: return true
+        return vote.status == INACTIVE || vote.endTime.isBefore(LocalDateTime.now())
     }
 
     // 투표 종료 시간 조회

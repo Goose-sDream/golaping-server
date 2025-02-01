@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket
+package com.goosesdream.golaping.common.websocket.service
 
 import com.goosesdream.golaping.redis.service.RedisService
 import org.springframework.data.redis.core.RedisTemplate
@@ -11,8 +11,7 @@ import java.util.concurrent.TimeUnit
 class WebSocketManager(
     private val redisTemplate: RedisTemplate<String, String>,
     private val redisService: RedisService,
-    private val messagingTemplate: SimpMessagingTemplate
-) {
+    private val messagingTemplate: SimpMessagingTemplate) {
     private val webSocketTimers = mutableMapOf<String, Timer>() // 타이머 관리
     private val webSocketSessions = mutableMapOf<String, String>()  // 메모리 내 웹소켓 세션 관리
 

@@ -6,8 +6,7 @@ import java.time.LocalDateTime
 data class WebSocketErrorResponse(
     val timestamp: LocalDateTime = LocalDateTime.now(),
     val code: String,
-    val message: String
-) {
+    val message: String) {
     companion object {
         fun fromStatus(status: WebSocketResponseStatus): WebSocketErrorResponse {
             return WebSocketErrorResponse(
