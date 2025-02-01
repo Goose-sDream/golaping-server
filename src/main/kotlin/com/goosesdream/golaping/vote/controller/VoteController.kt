@@ -4,7 +4,7 @@ import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.base.BaseResponse
 import com.goosesdream.golaping.common.constants.RequestURI.Companion.VOTES
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
-import com.goosesdream.golaping.common.websocket.WebSocketManager
+import com.goosesdream.golaping.common.websocket.service.WebSocketManager
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.user.service.UserService
 import com.goosesdream.golaping.vote.dto.*
@@ -28,8 +28,7 @@ class VoteController(
     private val voteService: VoteService,
     private val sessionService: SessionService,
     private val webSocketManager: WebSocketManager,
-    private val userService: UserService
-) : VoteControllerInterface{
+    private val userService: UserService) : VoteControllerInterface{
     @Value("\${websocket.base-url}")
     private lateinit var websocketBaseUrl: String
 
@@ -40,12 +39,12 @@ class VoteController(
     @Operation(summary = "투표 생성", description = "새로운 투표를 생성하고, WebSocket URL과 SessionID를 반환한다.")
     override fun createVote(
         @RequestBody voteRequest: CreateVoteRequest,
-        request: HttpServletRequest
-    ): BaseResponse<CreateVoteResponse> {
+        request: HttpServletRequest): BaseResponse<CreateVoteResponse> {
         val sessionId = UUID.randomUUID().toString()
         sessionService.saveCreatorNicknameToSession(sessionId, voteRequest.nickname, voteRequest.timeLimit)
 
         val voteUuid = URI(voteRequest.link).path.split("/").last() // uuid 형식
+        val websocketUrl = "$websocketBaseUrl$websocketPath"
 
         voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
         webSocketManager.startWebSocketForVote(voteUuid, voteRequest.timeLimit)
@@ -54,7 +53,6 @@ class VoteController(
         val voteIdx = voteService.createVote(voteRequest, voteUuid, creator)
         userService.addParticipant(creator, voteUuid)
 
-        val websocketUrl = generateWebSocketUrl(voteUuid)
         return BaseResponse(
             CreateVoteResponse( //TODO: sessionId 쿠키에 담아 반환하도록 수정
                 websocketUrl,
@@ -65,17 +63,12 @@ class VoteController(
         )
     }
 
-    fun generateWebSocketUrl(voteUuid: String): String {
-        return "$websocketBaseUrl/ws$websocketPath/$voteUuid"
-    }
-
     @PostMapping("/enter")
     @Operation(summary = "닉네임 입력", description = "닉네임을 입력받고, websocketUrl과 SessionID, voteEndTime을 반환한다.")
     override fun enterVote(
         @RequestBody voteRequest: EnterVoteRequest,
         request: HttpServletRequest,
-        response: HttpServletResponse
-    ): BaseResponse<EnterVoteResponse> {
+        response: HttpServletResponse): BaseResponse<EnterVoteResponse> {
         val sessionId = UUID.randomUUID().toString()
 
         val voteEndTime = voteService.getVoteEndTime(voteRequest.voteUuid)
@@ -89,8 +82,8 @@ class VoteController(
 
         val user = userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
         userService.addParticipant(user, voteRequest.voteUuid)
+        val websocketUrl = "$websocketBaseUrl$websocketPath"
 
-        val websocketUrl = generateWebSocketUrl(voteRequest.voteUuid)
         setCookie(sessionId, timeLimit, response)
 
         return BaseResponse(EnterVoteResponse(websocketUrl, voteEndTime))
@@ -99,8 +92,7 @@ class VoteController(
     private fun setCookie(
         sessionId: String,
         timeLimit: Int,
-        response: HttpServletResponse
-    ) {
+        response: HttpServletResponse) {
         val cookie = Cookie("SESSIONID", sessionId)
         cookie.isHttpOnly = true
         cookie.path = "/"

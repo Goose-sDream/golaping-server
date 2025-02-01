@@ -30,8 +30,8 @@ class VoteService(
     private val redisService: RedisService,
     private val participantRepository: ParticipantRepository,
     private val voteOptionRepository: VoteOptionRepository,
-    private val userVotesRepository: UserVoteRepository
-) {
+    private val userVotesRepository: UserVoteRepository) {
+
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
     fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) : Long? { //TODO: voteType에 따라 다른 로직 구현 필요
@@ -76,8 +76,8 @@ class VoteService(
 
     // 투표 종료 여부 확인
     fun checkVoteEnded(voteUuid: String): Boolean {
-        val vote = voteRepository.findByUuid(voteUuid)
-        return vote?.endTime?.isBefore(LocalDateTime.now()) ?: true
+        val vote = voteRepository.findByUuid(voteUuid) ?: return true
+        return vote.status == INACTIVE || vote.endTime.isBefore(LocalDateTime.now())
     }
 
     // 투표 종료 시간 조회
@@ -252,7 +252,7 @@ class VoteService(
         return sortedResults
     }
 
-    // 투표 종료
+    // 투표 종료(투표 제한 시간 도달 전)
     fun closeVote(vote: Votes, nickname: String): List<VoteResultData> {
         val user = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(PARTICIPANT_NOT_FOUND)
         if (user != vote.creator) throw BaseException(NOT_CREATOR)
@@ -273,9 +273,13 @@ class VoteService(
             .associate { (optionId, count) -> (optionId as Long) to (count as Int) }
     }
 
-    // TODO: 투표 참여자들에게 브로드캐스트
-    fun notifyParticipants(vote: Votes) {
+    // 타이머 만료로 인한 투표 종료 처리
+    fun expireVote(voteUuid: String) {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
 
+        if (vote.status != INACTIVE) {
+            vote.status = INACTIVE
+            voteRepository.save(vote)
+        }
     }
-
 }

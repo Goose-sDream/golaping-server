@@ -1,6 +1,8 @@
-package com.goosesdream.golaping.common.websocket
+package com.goosesdream.golaping.common.websocket.service
 
 import com.goosesdream.golaping.redis.service.RedisService
+import com.goosesdream.golaping.vote.dto.VoteExpiredEvent
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
@@ -11,8 +13,9 @@ import java.util.concurrent.TimeUnit
 class WebSocketManager(
     private val redisTemplate: RedisTemplate<String, String>,
     private val redisService: RedisService,
-    private val messagingTemplate: SimpMessagingTemplate
-) {
+    private val messagingTemplate: SimpMessagingTemplate,
+    private val eventPublisher: ApplicationEventPublisher) {
+
     private val webSocketTimers = mutableMapOf<String, Timer>() // 타이머 관리
     private val webSocketSessions = mutableMapOf<String, String>()  // 메모리 내 웹소켓 세션 관리
 
@@ -41,6 +44,7 @@ class WebSocketManager(
             val timer = Timer()
             timer.schedule(object : TimerTask() {
                 override fun run() {
+                    eventPublisher.publishEvent(VoteExpiredEvent(voteUuid))
                     stopWebSocketForVote(voteUuid)
                 }
             }, remainingTimeMillis)
@@ -50,7 +54,7 @@ class WebSocketManager(
     }
 
     // 채널 종료
-    fun stopWebSocketForVote(voteUuid: String) {
+    fun stopWebSocketForVote(voteUuid: String?) {
         val redisKey = voteSessionPrefix + voteUuid
         if (redisService.exists(redisKey)) {
             redisService.delete(redisKey)
@@ -59,23 +63,28 @@ class WebSocketManager(
         webSocketTimers[voteUuid]?.cancel()
         webSocketTimers.remove(voteUuid)
 
-        val webSocketSessionId = webSocketSessions.remove(voteUuid)
-
-        if (webSocketSessionId != null) {
-            sendDisconnectMessage(webSocketSessionId)  // 연결 종료 메시지 전송
-        }
+        webSocketSessions.remove(voteUuid)
     }
 
-    // 세션 종료를 위한 메시지 전송
-    fun sendDisconnectMessage(webSocketSessionId: String) {
+    // 특정 유저 대상 종료 메시지 전송
+    fun sendUserDisconnectMessage(webSocketSessionId: String) {
         try {
             val message = mapOf(
                 "message" to "투표 세션이 만료되어 웹소켓 연결이 끊어졌습니다.",
                 "status" to "closed"
             )
-            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", message)
+            messagingTemplate.convertAndSendToUser(webSocketSessionId,"/queue/disconnect", message)
         } catch (e: Exception) {
             println("연결 종료 메세지 전송 실패: ${e.message}")
+        }
+    }
+
+    // 전체 브로드캐스트 종료 메시지 전송
+    fun broadcastVoteClosed(voteUuid: String, message: Any) {
+        try {
+            messagingTemplate.convertAndSend("/topic/vote/$voteUuid/closed", message)
+        } catch (e: Exception) {
+            println("브로드캐스트 종료 메시지 전송 실패: ${e.message}")
         }
     }
 

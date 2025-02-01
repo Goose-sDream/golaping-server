@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket
+package com.goosesdream.golaping.common.websocket.interceptor
 
 import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
@@ -19,15 +19,13 @@ import java.util.UUID
 @Component
 class WebSocketInterceptor(
     private val sessionService: SessionService,
-    private val voteService: VoteService
-) : HandshakeInterceptor {
+    private val voteService: VoteService) : HandshakeInterceptor {
 
     override fun beforeHandshake( // WebSocket 연결 전 실행되는 HTTP 요청
         request: ServerHttpRequest,
         response: ServerHttpResponse,
         wsHandler: WebSocketHandler,
-        attributes: MutableMap<String, Any>
-    ): Boolean {
+        attributes: MutableMap<String, Any>): Boolean {
         // 쿠키에서 sessionId 추출
         val cookies = (request as? ServletServerHttpRequest)?.servletRequest?.cookies
         val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
@@ -36,7 +34,7 @@ class WebSocketInterceptor(
         if (sessionId.isNullOrBlank()) throw BaseException(MISSING_SESSION_ID)
 
         // voteUuid validation
-        val voteUuid = request.uri.path.split("/").lastOrNull()
+        val voteUuid = request.headers["voteUuid"]?.firstOrNull()
         if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) throw BaseException(INVALID_VOTE_UUID)
 
         // vote status
@@ -58,8 +56,7 @@ class WebSocketInterceptor(
         request: ServerHttpRequest,
         response: ServerHttpResponse,
         wsHandler: WebSocketHandler,
-        exception: Exception?
-    ) {
+        exception: Exception?) {
         val session = request.attributes["session"] as? WebSocketSession
         val voteUuid = session?.attributes?.get("voteUuid") as? String
 
