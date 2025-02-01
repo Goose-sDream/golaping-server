@@ -63,11 +63,7 @@ class WebSocketManager(
         webSocketTimers[voteUuid]?.cancel()
         webSocketTimers.remove(voteUuid)
 
-        val webSocketSessionId = webSocketSessions.remove(voteUuid)
-
-        if (webSocketSessionId != null) {
-            sendDisconnectMessage(webSocketSessionId)  // 연결 종료 메시지 전송
-        }
+        webSocketSessions.remove(voteUuid)
     }
 
     // 세션 종료를 위한 메시지 전송
