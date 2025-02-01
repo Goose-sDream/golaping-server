@@ -54,7 +54,7 @@ class WebSocketManager(
     }
 
     // 채널 종료
-    fun stopWebSocketForVote(voteUuid: String) {
+    fun stopWebSocketForVote(voteUuid: String?) {
         val redisKey = voteSessionPrefix + voteUuid
         if (redisService.exists(redisKey)) {
             redisService.delete(redisKey)
@@ -66,16 +66,25 @@ class WebSocketManager(
         webSocketSessions.remove(voteUuid)
     }
 
-    // 세션 종료를 위한 메시지 전송
-    fun sendDisconnectMessage(webSocketSessionId: String) {
+    // 특정 유저 대상 종료 메시지 전송
+    fun sendUserDisconnectMessage(webSocketSessionId: String) {
         try {
             val message = mapOf(
                 "message" to "투표 세션이 만료되어 웹소켓 연결이 끊어졌습니다.",
                 "status" to "closed"
             )
-            messagingTemplate.convertAndSend("/topic/vote/$webSocketSessionId", message)
+            messagingTemplate.convertAndSendToUser(webSocketSessionId,"/queue/disconnect", message)
         } catch (e: Exception) {
             println("연결 종료 메세지 전송 실패: ${e.message}")
+        }
+    }
+
+    // 전체 브로드캐스트 종료 메시지 전송
+    fun broadcastVoteClosed(voteUuid: String, message: Any) {
+        try {
+            messagingTemplate.convertAndSend("/topic/vote/$voteUuid/closed", message)
+        } catch (e: Exception) {
+            println("브로드캐스트 종료 메시지 전송 실패: ${e.message}")
         }
     }
 
