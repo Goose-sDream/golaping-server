@@ -31,6 +31,7 @@ class VoteService(
     private val participantRepository: ParticipantRepository,
     private val voteOptionRepository: VoteOptionRepository,
     private val userVotesRepository: UserVoteRepository) {
+
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
     fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) : Long? { //TODO: voteType에 따라 다른 로직 구현 필요
@@ -251,7 +252,7 @@ class VoteService(
         return sortedResults
     }
 
-    // 투표 종료
+    // 투표 종료(투표 제한 시간 도달 전)
     fun closeVote(vote: Votes, nickname: String): List<VoteResultData> {
         val user = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(PARTICIPANT_NOT_FOUND)
         if (user != vote.creator) throw BaseException(NOT_CREATOR)
@@ -277,4 +278,13 @@ class VoteService(
 
     }
 
+    // 타이머 만료로 인한 투표 종료 처리
+    fun expireVote(voteUuid: String) {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+
+        if (vote.status != INACTIVE) {
+            vote.status = INACTIVE
+            voteRepository.save(vote)
+        }
+    }
 }

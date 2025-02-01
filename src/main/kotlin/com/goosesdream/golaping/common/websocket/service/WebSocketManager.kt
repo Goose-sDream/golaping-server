@@ -1,6 +1,8 @@
 package com.goosesdream.golaping.common.websocket.service
 
 import com.goosesdream.golaping.redis.service.RedisService
+import com.goosesdream.golaping.vote.dto.VoteExpiredEvent
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.redis.core.RedisTemplate
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Service
@@ -11,7 +13,9 @@ import java.util.concurrent.TimeUnit
 class WebSocketManager(
     private val redisTemplate: RedisTemplate<String, String>,
     private val redisService: RedisService,
-    private val messagingTemplate: SimpMessagingTemplate) {
+    private val messagingTemplate: SimpMessagingTemplate,
+    private val eventPublisher: ApplicationEventPublisher) {
+
     private val webSocketTimers = mutableMapOf<String, Timer>() // 타이머 관리
     private val webSocketSessions = mutableMapOf<String, String>()  // 메모리 내 웹소켓 세션 관리
 
@@ -40,6 +44,7 @@ class WebSocketManager(
             val timer = Timer()
             timer.schedule(object : TimerTask() {
                 override fun run() {
+                    eventPublisher.publishEvent(VoteExpiredEvent(voteUuid))
                     stopWebSocketForVote(voteUuid)
                 }
             }, remainingTimeMillis)
