@@ -273,11 +273,6 @@ class VoteService(
             .associate { (optionId, count) -> (optionId as Long) to (count as Int) }
     }
 
-    // TODO: 투표 참여자들에게 브로드캐스트
-    fun notifyParticipants(vote: Votes) {
-
-    }
-
     // 타이머 만료로 인한 투표 종료 처리
     fun expireVote(voteUuid: String) {
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
