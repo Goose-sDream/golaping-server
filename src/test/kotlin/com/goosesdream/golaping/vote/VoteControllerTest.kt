@@ -31,8 +31,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = [
-    "websocket.base-url=ws://localhost:8080",
-    "websocket.path=/votes"
+    "websocket.base-url=http://localhost:8080",
+    "websocket.path=/ws/votes"
 ])
 class VoteControllerTest {
 
@@ -66,9 +66,9 @@ class VoteControllerTest {
         )
 
         val voteUuid = "12345"
-        val websocketBaseUrl = "ws://localhost:8080"
-        val websocketPath = "/votes"
-        val websocketUrl = "$websocketBaseUrl/ws$websocketPath/$voteUuid"
+        val websocketBaseUrl = "http://localhost:8080"
+        val websocketPath = "/ws/votes"
+        val websocketUrl = "$websocketBaseUrl$websocketPath"
 
         val creator = Users(nickname = "testUser")
 
