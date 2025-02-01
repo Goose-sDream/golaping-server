@@ -37,6 +37,7 @@ class VoteWebSocketController(
 
         if (expirationTime <= System.currentTimeMillis()) {
             webSocketManager.stopWebSocketForVote(voteUuid)
+            webSocketManager.sendUserDisconnectMessage(voteUuid)
             throw IllegalStateException("EXPIRED_VOTE")
         }
 
@@ -130,7 +131,10 @@ class VoteWebSocketController(
         val voteResults = voteService.closeVote(vote, nickname)
         webSocketManager.stopWebSocketForVote(voteUuid)
 
-        return WebSocketResponse("투표가 종료되었습니다.", VoteResultResponse(vote.title, voteResults))
+        val broadcastMessage = VoteResultResponse(vote.title, voteResults)
+        webSocketManager.broadcastVoteClosed(voteUuid, broadcastMessage)
+
+        return WebSocketResponse("투표가 종료되었습니다.", broadcastMessage)
     }
 
     // 공통 예외 처리 핸들러
@@ -165,18 +169,22 @@ class VoteWebSocketController(
     // WebSocket 세션 오류 처리
     @MessageMapping("/vote/transportError")
     fun handleTransportError(session: SimpMessageHeaderAccessor, exception: Throwable) {
-        val voteUuid = session.sessionId
-        if (voteUuid != null) {
+        val webSocketSessionId = session.sessionId
+        val voteUuid = session.sessionAttributes?.get("voteUuid") as? String
+        if (webSocketSessionId != null) {
             webSocketManager.stopWebSocketForVote(voteUuid)
+            webSocketManager.sendUserDisconnectMessage(webSocketSessionId)
         }
     }
 
     // WebSocket 연결 종료 후 처리
     @MessageMapping("/vote/disconnect")
     fun afterConnectionClosed(session: SimpMessageHeaderAccessor) {
-        val voteUuid = session.sessionId
-        if (voteUuid != null) {
+        val webSocketSessionId = session.sessionId
+        val voteUuid = session.sessionAttributes?.get("voteUuid") as? String
+        if (webSocketSessionId != null) {
             webSocketManager.stopWebSocketForVote(voteUuid)
+            webSocketManager.sendUserDisconnectMessage(webSocketSessionId)
         }
     }
 }
