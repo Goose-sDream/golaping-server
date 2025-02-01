@@ -30,8 +30,7 @@ class VoteService(
     private val redisService: RedisService,
     private val participantRepository: ParticipantRepository,
     private val voteOptionRepository: VoteOptionRepository,
-    private val userVotesRepository: UserVoteRepository
-) {
+    private val userVotesRepository: UserVoteRepository) {
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
     fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) : Long? { //TODO: voteType에 따라 다른 로직 구현 필요
