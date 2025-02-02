@@ -27,7 +27,8 @@ interface VoteControllerInterface {
     @PostMapping
     fun createVote(
         @RequestBody voteRequest: CreateVoteRequest,
-        request: HttpServletRequest
+        request: HttpServletRequest,
+        response: HttpServletResponse
     ): BaseResponse<CreateVoteResponse>
 
 
