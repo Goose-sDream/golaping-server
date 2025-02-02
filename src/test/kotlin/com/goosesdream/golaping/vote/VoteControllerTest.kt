@@ -15,7 +15,6 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.user.service.UserService
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.Matchers
 import org.junit.jupiter.api.DisplayName
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -54,7 +53,7 @@ class VoteControllerTest {
     private val objectMapper = jacksonObjectMapper()
 
     @Test
-    @DisplayName("투표 생성 API는 투표를 생성하고 WebSocket URL과 Session ID를 반환해야 한다.")
+    @DisplayName("투표 생성 API는 투표를 생성하고 WebSocket URL을 반환하며, 세션 ID를 쿠키에 저장해야 한다.")
     fun createVoteControllerTest() {
         val voteRequest = CreateVoteRequest(
             nickname = "testUser",
@@ -86,14 +85,19 @@ class VoteControllerTest {
             .andExpect(status().isOk())  // 200 응답을 기대
             .andExpect(jsonPath("$.isSuccess").value(true))
             .andExpect(jsonPath("$.result.websocketUrl").value(websocketUrl))
-            .andExpect(jsonPath("$.result.sessionId").value(Matchers.matchesPattern("^[0-9a-fA-F-]{36}$")))
             .andReturn()
+
+        val cookieHeader = result.response.getHeader("Set-Cookie")
+        assertThat(cookieHeader).isNotNull()
+        assertThat(cookieHeader).contains("SESSIONID=")
+        assertThat(cookieHeader).contains("Path=/")
+        assertThat(cookieHeader).contains("HttpOnly")
+        assertThat(cookieHeader).contains("Max-Age=${voteRequest.timeLimit * 60}")
 
         val response = objectMapper.readValue(result.response.contentAsString, BaseResponse::class.java)
         val createVoteResponse = objectMapper.convertValue(response.result, CreateVoteResponse::class.java)
 
         assertThat(createVoteResponse.websocketUrl).isEqualTo(websocketUrl)
-        assertThat(createVoteResponse.sessionId).matches("^[0-9a-fA-F-]{36}$")
 
         verify(sessionService).saveCreatorNicknameToSession(any(), eq("testUser"), eq(10))
         verify(webSocketManager).startWebSocketForVote(eq(voteUuid), eq(10))

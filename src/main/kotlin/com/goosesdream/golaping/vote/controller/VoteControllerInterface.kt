@@ -27,8 +27,10 @@ interface VoteControllerInterface {
     @PostMapping
     fun createVote(
         @RequestBody voteRequest: CreateVoteRequest,
-        request: HttpServletRequest
+        request: HttpServletRequest,
+        response: HttpServletResponse
     ): BaseResponse<CreateVoteResponse>
+
 
     @Operation(
         summary = "닉네임 입력",
@@ -45,6 +47,7 @@ interface VoteControllerInterface {
         request: HttpServletRequest,
         response: HttpServletResponse
     ): BaseResponse<EnterVoteResponse>
+
 
     @Operation(
         summary = "투표 결과 조회",
