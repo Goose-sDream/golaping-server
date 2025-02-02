@@ -30,6 +30,7 @@ interface VoteControllerInterface {
         request: HttpServletRequest
     ): BaseResponse<CreateVoteResponse>
 
+
     @Operation(
         summary = "닉네임 입력",
         description = "닉네임을 입력받고, WebSocket URL과 SessionID, voteEndTime을 반환한다.",
@@ -45,6 +46,7 @@ interface VoteControllerInterface {
         request: HttpServletRequest,
         response: HttpServletResponse
     ): BaseResponse<EnterVoteResponse>
+
 
     @Operation(
         summary = "투표 결과 조회",

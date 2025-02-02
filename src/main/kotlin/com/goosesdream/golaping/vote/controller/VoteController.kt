@@ -28,7 +28,8 @@ class VoteController(
     private val voteService: VoteService,
     private val sessionService: SessionService,
     private val webSocketManager: WebSocketManager,
-    private val userService: UserService) : VoteControllerInterface{
+    private val userService: UserService) : VoteControllerInterface {
+
     @Value("\${websocket.base-url}")
     private lateinit var websocketBaseUrl: String
 
@@ -36,7 +37,6 @@ class VoteController(
     private lateinit var websocketPath: String
 
     @PostMapping
-    @Operation(summary = "투표 생성", description = "새로운 투표를 생성하고, WebSocket URL과 SessionID를 반환한다.")
     override fun createVote(
         @RequestBody voteRequest: CreateVoteRequest,
         request: HttpServletRequest): BaseResponse<CreateVoteResponse> {
@@ -64,7 +64,6 @@ class VoteController(
     }
 
     @PostMapping("/enter")
-    @Operation(summary = "닉네임 입력", description = "닉네임을 입력받고, websocketUrl과 SessionID, voteEndTime을 반환한다.")
     override fun enterVote(
         @RequestBody voteRequest: EnterVoteRequest,
         request: HttpServletRequest,
@@ -101,7 +100,6 @@ class VoteController(
     }
 
     @GetMapping("/{voteIdx}/result")
-    @Operation(summary = "투표 결과 조회", description = "투표 결과를 조회한다.")
     override fun getVoteResult(@PathVariable voteIdx: Long): BaseResponse<VoteResultResponse> {
         val vote = voteService.getVoteByVoteIdx(voteIdx) ?: throw BaseException(VOTE_NOT_FOUND)
         val voteResults = voteService.getVoteResults(voteIdx)
