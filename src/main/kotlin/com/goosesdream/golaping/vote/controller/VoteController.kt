@@ -10,7 +10,6 @@ import com.goosesdream.golaping.user.service.UserService
 import com.goosesdream.golaping.vote.dto.*
 import com.goosesdream.golaping.vote.service.VoteService
 import io.swagger.v3.oas.annotations.Hidden
-import io.swagger.v3.oas.annotations.Operation
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
