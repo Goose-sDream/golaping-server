@@ -9,7 +9,8 @@ class WebConfig : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
         registry.addMapping("/**")
             .allowedOrigins("http://localhost:3300", "http://golaping.site")
-            .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+            .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+            .allowedHeaders("*")
             .allowCredentials(true) // 쿠키
     }
 }
