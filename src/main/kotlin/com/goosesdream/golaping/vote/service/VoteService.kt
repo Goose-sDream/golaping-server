@@ -75,7 +75,9 @@ class VoteService(
     }
 
     // 투표 종료 여부 확인
-    fun checkVoteEnded(voteUuid: String): Boolean {
+    fun checkVoteEnded(voteUuid: String?): Boolean {
+        if (voteUuid.isNullOrBlank()) return true
+
         val vote = voteRepository.findByUuid(voteUuid) ?: return true
         return vote.status == INACTIVE || vote.endTime.isBefore(LocalDateTime.now())
     }
