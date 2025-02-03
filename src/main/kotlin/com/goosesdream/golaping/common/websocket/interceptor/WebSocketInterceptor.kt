@@ -9,7 +9,6 @@ import org.springframework.http.server.ServerHttpResponse
 import org.springframework.http.server.ServletServerHttpRequest
 import org.springframework.stereotype.Component
 import org.springframework.web.socket.WebSocketHandler
-import org.springframework.web.socket.WebSocketSession
 import org.springframework.web.socket.server.HandshakeInterceptor
 import java.util.UUID
 
@@ -25,23 +24,24 @@ class WebSocketInterceptor(
         request: ServerHttpRequest,
         response: ServerHttpResponse,
         wsHandler: WebSocketHandler,
-        attributes: MutableMap<String, Any>): Boolean {
+        attributes: MutableMap<String, Any?>
+    ): Boolean {
         // 쿠키에서 sessionId 추출
         val cookies = (request as? ServletServerHttpRequest)?.servletRequest?.cookies
         val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
 
-        // 처음 접속해서 sessionId가 없는 경우
-        if (sessionId.isNullOrBlank()) throw BaseException(MISSING_SESSION_ID)
-
-        // voteUuid validation
         val voteUuid = request.headers["voteUuid"]?.firstOrNull()
-        if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) throw BaseException(INVALID_VOTE_UUID)
+        if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) {
+            attributes["voteUuid"] = null
+        } else {
+            attributes["voteUuid"] = voteUuid
+        }
 
         // vote status
         val isVoteEnded = voteService.checkVoteEnded(voteUuid)
 
-        val nickname = if (!isVoteEnded) { // 투표 진행 중: nickname validation, 종료: nickname 없어도 투표 결과 확인 가능
-            sessionService.getNicknameFromSession(sessionId)?: throw BaseException(UNAUTHORIZED)
+        val nickname = if (sessionId != null && !isVoteEnded) { // 투표 진행 중: nickname validation, 종료: nickname 없어도 투표 결과 확인 가능
+            sessionService.getNicknameFromSession(sessionId) ?: throw BaseException(UNAUTHORIZED)
         } else null
 
         attributes["sessionId"] = sessionId
@@ -56,10 +56,9 @@ class WebSocketInterceptor(
         request: ServerHttpRequest,
         response: ServerHttpResponse,
         wsHandler: WebSocketHandler,
-        exception: Exception?) {
-        val session = request.attributes["session"] as? WebSocketSession
-        val voteUuid = session?.attributes?.get("voteUuid") as? String
-
+        exception: Exception?
+    ) {
+        val voteUuid = request.attributes["voteUuid"] as? String
         println("Handshake completed for voteUuid: $voteUuid")
     }
 
