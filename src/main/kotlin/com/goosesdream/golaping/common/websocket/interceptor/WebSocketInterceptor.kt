@@ -37,9 +37,7 @@ class WebSocketInterceptor(
             attributes["voteUuid"] = voteUuid
         }
 
-        // vote status
-        val isVoteEnded = voteService.checkVoteEnded(voteUuid)
-
+        val isVoteEnded = if (voteUuid != null) voteService.checkVoteEnded(voteUuid) else true
         val nickname = if (sessionId != null && !isVoteEnded) { // 투표 진행 중: nickname validation, 종료: nickname 없어도 투표 결과 확인 가능
             sessionService.getNicknameFromSession(sessionId) ?: throw BaseException(UNAUTHORIZED)
         } else null
