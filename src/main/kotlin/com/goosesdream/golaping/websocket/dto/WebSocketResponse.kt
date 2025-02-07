@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket.dto
+package com.goosesdream.golaping.websocket.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty

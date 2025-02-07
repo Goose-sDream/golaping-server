@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket.service
+package com.goosesdream.golaping.websocket.service
 
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.vote.dto.VoteExpiredEvent

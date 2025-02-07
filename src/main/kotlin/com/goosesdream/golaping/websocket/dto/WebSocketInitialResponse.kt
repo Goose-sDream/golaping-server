@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket.dto
+package com.goosesdream.golaping.websocket.dto
 
 import java.time.LocalDateTime
 
