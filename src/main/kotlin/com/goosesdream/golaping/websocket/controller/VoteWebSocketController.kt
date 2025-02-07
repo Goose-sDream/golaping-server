@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket.controller
+package com.goosesdream.golaping.websocket.controller
 
 import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import org.springframework.messaging.handler.annotation.MessageMapping
@@ -6,11 +6,11 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
 import com.goosesdream.golaping.common.exception.WebSocketErrorResponse
-import com.goosesdream.golaping.common.websocket.dto.WebSocketResponse
-import com.goosesdream.golaping.common.websocket.dto.AddVoteOptionRequest
-import com.goosesdream.golaping.common.websocket.dto.VoteRequest
-import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
-import com.goosesdream.golaping.common.websocket.service.WebSocketManager
+import com.goosesdream.golaping.websocket.dto.WebSocketResponse
+import com.goosesdream.golaping.websocket.dto.AddVoteOptionRequest
+import com.goosesdream.golaping.websocket.dto.VoteRequest
+import com.goosesdream.golaping.websocket.dto.WebSocketInitialResponse
+import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
 import org.springframework.messaging.handler.annotation.DestinationVariable
@@ -69,7 +69,8 @@ class VoteWebSocketController(
     fun handleAddOption(
         @DestinationVariable voteUuid: String,
         headers: SimpMessageHeaderAccessor,
-        message: AddVoteOptionRequest): WebSocketResponse<Any> {
+        message: AddVoteOptionRequest
+    ): WebSocketResponse<Any> {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
@@ -82,7 +83,8 @@ class VoteWebSocketController(
     fun handleVoteToggle(
         @DestinationVariable voteUuid: String,
         headers: SimpMessageHeaderAccessor,
-        message: VoteRequest): WebSocketResponse<Any> {
+        message: VoteRequest
+    ): WebSocketResponse<Any> {
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
