@@ -1,14 +1,4 @@
-package com.goosesdream.golaping.common.websocket
-
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.goosesdream.golaping.common.enums.WebSocketResponseStatus
-import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
-import com.goosesdream.golaping.common.exception.WebSocketErrorResponse
-import com.goosesdream.golaping.common.websocket.dto.WebSocketInitialResponse
-import com.goosesdream.golaping.common.websocket.dto.WebSocketRequest
-import com.goosesdream.golaping.vote.service.VoteService
-import org.springframework.stereotype.Component
-import org.springframework.web.socket.*
+package com.goosesdream.golaping.websocket
 
 //@Component
 //class GlobalWebSocketHandler(

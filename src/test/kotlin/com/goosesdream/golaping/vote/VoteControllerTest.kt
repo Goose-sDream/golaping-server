@@ -1,6 +1,6 @@
 package com.goosesdream.golaping.vote
 
-import com.goosesdream.golaping.common.websocket.service.WebSocketManager
+import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.vote.service.VoteService
 import org.junit.jupiter.api.Test

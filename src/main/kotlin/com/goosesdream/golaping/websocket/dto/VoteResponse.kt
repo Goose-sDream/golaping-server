@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket.dto
+package com.goosesdream.golaping.websocket.dto
 
 data class VoteResponse(
     val isCreator: Boolean,

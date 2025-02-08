@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.common.websocket.interceptor
+package com.goosesdream.golaping.websocket.interceptor
 
 import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
@@ -31,22 +31,21 @@ class WebSocketInterceptor(
         val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
 
         val voteUuid = request.headers["voteUuid"]?.firstOrNull()
-        if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) {
-            attributes["voteUuid"] = null
+        attributes["voteUuid"] = if (!voteUuid.isNullOrBlank() && isValidVoteUuid(voteUuid)) {
+            voteUuid
         } else {
-            attributes["voteUuid"] = voteUuid
+            ""
         }
 
-        // vote status
-        val isVoteEnded = voteService.checkVoteEnded(voteUuid)
-
-        val nickname = if (sessionId != null && !isVoteEnded) { // 투표 진행 중: nickname validation, 종료: nickname 없어도 투표 결과 확인 가능
-            sessionService.getNicknameFromSession(sessionId) ?: throw BaseException(UNAUTHORIZED)
+        val isVoteEnded = if (voteUuid != null) voteService.checkVoteEnded(voteUuid) else true
+        val nickname = if (!isVoteEnded) {
+            sessionId?.let {
+                sessionService.getNicknameFromSession(it) ?: throw BaseException(UNAUTHORIZED)
+            } ?: throw BaseException(MISSING_SESSION_ID)
         } else null
 
-        attributes["sessionId"] = sessionId
+        attributes["sessionId"] = sessionId ?: ""
         attributes["nickname"] = nickname ?: ""
-        attributes["voteUuid"] = voteUuid
         attributes["isVoteEnded"] = isVoteEnded
 
         return true
