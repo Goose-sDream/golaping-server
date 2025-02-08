@@ -31,24 +31,19 @@ class WebSocketInterceptor(
         val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
 
         val voteUuid = request.headers["voteUuid"]?.firstOrNull()
-        if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) {
-            attributes["voteUuid"] = null
-        } else {
-            attributes["voteUuid"] = voteUuid
-        }
+        attributes["voteUuid"] = voteUuid?.let {
+            if (it.isNotBlank() && isValidVoteUuid(it)) it else ""
+        } ?: ""
 
         val isVoteEnded = if (voteUuid != null) voteService.checkVoteEnded(voteUuid) else true
         val nickname = if (!isVoteEnded) {
-            if (sessionId != null) {
-                sessionService.getNicknameFromSession(sessionId) ?: throw BaseException(UNAUTHORIZED)
-            } else {
-                throw BaseException(MISSING_SESSION_ID)
-            }
+            sessionId?.let {
+                sessionService.getNicknameFromSession(it) ?: throw BaseException(UNAUTHORIZED)
+            } ?: throw BaseException(MISSING_SESSION_ID)
         } else null
 
         attributes["sessionId"] = sessionId
         attributes["nickname"] = nickname ?: ""
-        attributes["voteUuid"] = voteUuid
         attributes["isVoteEnded"] = isVoteEnded
 
         return true
