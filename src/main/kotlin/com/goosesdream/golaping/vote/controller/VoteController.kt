@@ -9,7 +9,6 @@ import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.user.service.UserService
 import com.goosesdream.golaping.vote.dto.*
 import com.goosesdream.golaping.vote.service.VoteService
-import io.swagger.v3.oas.annotations.Hidden
 import jakarta.servlet.http.Cookie
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -20,7 +19,6 @@ import java.time.Duration
 import java.time.LocalDateTime
 import java.util.*
 
-@Hidden
 @RestController
 @RequestMapping(VOTES)
 class VoteController(
