@@ -28,7 +28,7 @@ class VoteWebSocketController(
 
     // WebSocket 연결 후 실행
     @MessageMapping("/vote/{voteUuid}/connect")
-    @SendToUser("/queue/initialResponse") // 사용자 별로 응답 전송
+    @SendToUser("/queue/initialResponse")
     fun connectToVote(
         @DestinationVariable voteUuid: String,
         session: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
