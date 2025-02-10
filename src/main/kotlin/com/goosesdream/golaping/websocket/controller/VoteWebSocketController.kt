@@ -13,7 +13,6 @@ import com.goosesdream.golaping.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
-import org.springframework.messaging.handler.annotation.DestinationVariable
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.SimpMessagingTemplate
@@ -63,8 +62,8 @@ class VoteWebSocketController(
             previousVotes
         )
 
+        // 여러 탭/브라우저에서 메세지를 동일하게 받도록
         messagingTemplate.convertAndSendToUser(sessionId, "/queue/initialResponse", initialWebSocketResponse)
-
         return WebSocketResponse("연결에 성공했습니다.", initialWebSocketResponse)
     }
 
@@ -178,23 +177,43 @@ class VoteWebSocketController(
 
     // WebSocket 세션 오류 처리
     @MessageMapping("/vote/transportError")
-    fun handleTransportError(session: SimpMessageHeaderAccessor, exception: Throwable) {
-        val webSocketSessionId = session.sessionId
-        val voteUuid = session.sessionAttributes?.get("voteUuid") as? String
+    fun handleTransportError(headers: SimpMessageHeaderAccessor, exception: Throwable) {
+        val webSocketSessionId = headers.sessionId
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String
+        val sessionId = headers.sessionAttributes?.get("sessionId") as? String
+
         if (webSocketSessionId != null) {
             webSocketManager.stopWebSocketForVote(voteUuid)
             webSocketManager.sendUserDisconnectMessage(webSocketSessionId)
+
+            if (sessionId != null) {
+                messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/disconnect",
+                    WebSocketResponse("DISCONNECTED: 연결이 끊어졌습니다.")
+                )
+            }
         }
     }
 
     // WebSocket 연결 종료 후 처리
     @MessageMapping("/vote/disconnect")
-    fun afterConnectionClosed(session: SimpMessageHeaderAccessor) {
-        val webSocketSessionId = session.sessionId
-        val voteUuid = session.sessionAttributes?.get("voteUuid") as? String
+    fun afterConnectionClosed(headers: SimpMessageHeaderAccessor) {
+        val webSocketSessionId = headers.sessionId
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String
+        val sessionId = headers.sessionAttributes?.get("sessionId") as? String
+
         if (webSocketSessionId != null) {
             webSocketManager.stopWebSocketForVote(voteUuid)
             webSocketManager.sendUserDisconnectMessage(webSocketSessionId)
+
+            if (sessionId != null) {
+                messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/disconnect",
+                    WebSocketResponse("CLOSED: 연결이 종료되었습니다.")
+                )
+            }
         }
     }
 }
