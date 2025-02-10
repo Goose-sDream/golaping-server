@@ -13,9 +13,9 @@ import com.goosesdream.golaping.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
-import org.springframework.messaging.handler.annotation.DestinationVariable
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.handler.annotation.SendTo
+import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.messaging.simp.annotation.SendToUser
 import java.time.Instant
 import java.time.LocalDateTime
@@ -24,14 +24,18 @@ import java.time.ZoneId
 @Controller
 class VoteWebSocketController(
     private val webSocketManager: WebSocketManager,
-    private val voteService: VoteService) {
+    private val voteService: VoteService,
+    private val messagingTemplate: SimpMessagingTemplate
+) {
 
     // WebSocket 연결 후 실행
-    @MessageMapping("/vote/{voteUuid}/connect")
-    @SendToUser("/queue/initialResponse")
+    @MessageMapping("/vote/connect")
     fun connectToVote(
-        @DestinationVariable voteUuid: String,
-        session: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
+        headers: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
+        val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalStateException("MISSING_NICKNAME")
+        val sessionId = headers.sessionAttributes?.get("sessionId") as? String ?: throw IllegalStateException("MISSING_SESSION_ID")
+
         val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid) ?: throw IllegalStateException("EXPIRED_VOTE")
         val expirationDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expirationTime), ZoneId.of("Asia/Seoul"))
 
@@ -45,10 +49,7 @@ class VoteWebSocketController(
         webSocketManager.setWebSocketTimer(voteUuid, remainingTimeMillis)
         webSocketManager.startWebSocketForVote(voteUuid, (remainingTimeMillis / 1000 / 60).toInt())
 
-        val nickname = session.sessionAttributes?.get("nickname") as? String
-            ?: throw IllegalStateException("MISSING_NICKNAME")
-
-        val webSocketSessionId = session.sessionId ?: throw IllegalStateException("MISSING_WEBSOCKET_SESSION_ID")
+        val webSocketSessionId = headers.sessionId ?: throw IllegalStateException("MISSING_WEBSOCKET_SESSION_ID")
         webSocketManager.saveWebSocketSession(voteUuid, webSocketSessionId)
 
         val voteLimit = voteService.getVoteLimit(voteUuid)
@@ -60,17 +61,20 @@ class VoteWebSocketController(
             webSocketSessionId,
             previousVotes
         )
+
+        // 여러 탭/브라우저에서 메세지를 동일하게 받도록
+        messagingTemplate.convertAndSendToUser(sessionId, "/queue/initialResponse", initialWebSocketResponse)
         return WebSocketResponse("연결에 성공했습니다.", initialWebSocketResponse)
     }
 
     // 투표 옵션 추가
-    @MessageMapping("/vote/{voteUuid}/addOption")
+    @MessageMapping("/vote/addOption")
     @SendTo("/topic/vote/{voteUuid}/addOption")
     fun handleAddOption(
-        @DestinationVariable voteUuid: String,
         headers: SimpMessageHeaderAccessor,
         message: AddVoteOptionRequest
     ): WebSocketResponse<Any> {
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
@@ -78,14 +82,15 @@ class VoteWebSocketController(
     }
 
     // 투표/투표취소
-    @MessageMapping("/vote/{voteUuid}")
+    @MessageMapping("/vote")
     @SendTo("/topic/vote/{voteUuid}")
     fun handleVoteToggle(
-        @DestinationVariable voteUuid: String,
         headers: SimpMessageHeaderAccessor,
         message: VoteRequest
     ): WebSocketResponse<Any> {
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
         val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
@@ -122,13 +127,14 @@ class VoteWebSocketController(
     }
 
     // [생성자] 투표 제한 시간 도달 전 미리 투표 종료
-    @MessageMapping("/vote/{voteUuid}/close")
+    @MessageMapping("/vote/close")
     @SendTo("/topic/vote/{voteUuid}/closed")
     fun closeVote(
-        @DestinationVariable voteUuid: String,
         headers: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
-        val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+
+        val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
 
         val voteResults = voteService.closeVote(vote, nickname)
         webSocketManager.stopWebSocketForVote(voteUuid)
@@ -158,6 +164,7 @@ class VoteWebSocketController(
                     "EXPIRED_VOTE" -> WebSocketErrorResponse.fromStatus(EXPIRED_VOTE)
                     "MISSING_WEBSOCKET_SESSION_ID" -> WebSocketErrorResponse.fromStatus(MISSING_WEBSOCKET_SESSION_ID)
                     "MISSING_NICKNAME" -> WebSocketErrorResponse.fromStatus(MISSING_NICKNAME)
+                    "MISSING_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(MISSING_VOTE_UUID)
                     "VOTE_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_NOT_FOUND)
                     "VOTE_OPTION_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_OPTION_NOT_FOUND)
                     "USER_VOTE_LIMIT_EXCEEDED" -> WebSocketErrorResponse.fromStatus(USER_VOTE_LIMIT_EXCEEDED)
@@ -170,23 +177,43 @@ class VoteWebSocketController(
 
     // WebSocket 세션 오류 처리
     @MessageMapping("/vote/transportError")
-    fun handleTransportError(session: SimpMessageHeaderAccessor, exception: Throwable) {
-        val webSocketSessionId = session.sessionId
-        val voteUuid = session.sessionAttributes?.get("voteUuid") as? String
+    fun handleTransportError(headers: SimpMessageHeaderAccessor, exception: Throwable) {
+        val webSocketSessionId = headers.sessionId
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String
+        val sessionId = headers.sessionAttributes?.get("sessionId") as? String
+
         if (webSocketSessionId != null) {
             webSocketManager.stopWebSocketForVote(voteUuid)
             webSocketManager.sendUserDisconnectMessage(webSocketSessionId)
+
+            if (sessionId != null) {
+                messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/disconnect",
+                    WebSocketResponse("DISCONNECTED: 연결이 끊어졌습니다.")
+                )
+            }
         }
     }
 
     // WebSocket 연결 종료 후 처리
     @MessageMapping("/vote/disconnect")
-    fun afterConnectionClosed(session: SimpMessageHeaderAccessor) {
-        val webSocketSessionId = session.sessionId
-        val voteUuid = session.sessionAttributes?.get("voteUuid") as? String
+    fun afterConnectionClosed(headers: SimpMessageHeaderAccessor) {
+        val webSocketSessionId = headers.sessionId
+        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String
+        val sessionId = headers.sessionAttributes?.get("sessionId") as? String
+
         if (webSocketSessionId != null) {
             webSocketManager.stopWebSocketForVote(voteUuid)
             webSocketManager.sendUserDisconnectMessage(webSocketSessionId)
+
+            if (sessionId != null) {
+                messagingTemplate.convertAndSendToUser(
+                    sessionId,
+                    "/queue/disconnect",
+                    WebSocketResponse("CLOSED: 연결이 종료되었습니다.")
+                )
+            }
         }
     }
 }
