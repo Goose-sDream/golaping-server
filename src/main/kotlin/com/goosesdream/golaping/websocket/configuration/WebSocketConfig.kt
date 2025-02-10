@@ -24,5 +24,6 @@ class WebSocketConfig(
     override fun configureMessageBroker(configurer: MessageBrokerRegistry) {
         configurer.enableSimpleBroker("/topic", "/queue") // 클라이언트가 구독할 경로
         configurer.setApplicationDestinationPrefixes("/app") // 클라이언트가 요청할 경로
+        configurer.setUserDestinationPrefix("/user") // 유저별로 메시지 전송
     }
 }
