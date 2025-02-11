@@ -33,6 +33,7 @@ class VoteController(
     @Value("\${websocket.path}")
     private lateinit var websocketPath: String
 
+    // 투표 생성
     @PostMapping
     override fun createVote(
         @RequestBody voteRequest: CreateVoteRequest,
@@ -42,7 +43,7 @@ class VoteController(
         val sessionId = UUID.randomUUID().toString()
         sessionService.saveCreatorNicknameToSession(sessionId, voteRequest.nickname, voteRequest.timeLimit)
 
-        val voteUuid = URI(voteRequest.link).path.split("/").last() // uuid 형식
+        val voteUuid = URI(voteRequest.link).path.split("/").last()
         val websocketUrl = "$websocketBaseUrl$websocketPath"
 
         voteService.saveVoteExpirationToRedis(voteUuid, voteRequest.timeLimit)
@@ -58,6 +59,7 @@ class VoteController(
         )
     }
 
+    // 닉네임 입력(투표 입장)
     @PostMapping("/enter")
     override fun enterVote(
         @RequestBody voteRequest: EnterVoteRequest,
@@ -75,13 +77,15 @@ class VoteController(
             timeLimit
         )
 
-        val user = userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
-        userService.addParticipant(user, voteRequest.voteUuid)
-        val websocketUrl = "$websocketBaseUrl$websocketPath"
-
         setCookie(sessionId, timeLimit, response)
 
-        return BaseResponse(EnterVoteResponse(websocketUrl, voteEndTime))
+        val user = userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
+        userService.addParticipant(user, voteRequest.voteUuid)
+
+        val websocketUrl = "$websocketBaseUrl$websocketPath"
+        val voteIdx = voteService.getVoteIdxByVoteUuid(voteRequest.voteUuid)
+
+        return BaseResponse(EnterVoteResponse(websocketUrl, voteEndTime, voteIdx))
     }
 
     private fun setCookie(
@@ -102,6 +106,7 @@ class VoteController(
     //  )
     }
 
+    // 투표 결과 조회
     @GetMapping("/{voteIdx}/result")
     override fun getVoteResult(@PathVariable voteIdx: Long): BaseResponse<VoteResultResponse> {
         val vote = voteService.getVoteByVoteIdx(voteIdx) ?: throw BaseException(VOTE_NOT_FOUND)

@@ -284,4 +284,8 @@ class VoteService(
             voteRepository.save(vote)
         }
     }
+
+    fun getVoteIdxByVoteUuid(voteUuid: String): Long {
+        return voteRepository.findByUuid(voteUuid)?.voteIdx ?: throw BaseException(VOTE_NOT_FOUND)
+    }
 }
