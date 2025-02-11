@@ -51,11 +51,13 @@ class VoteController(
 
         val creator = userService.createUserForVote(voteRequest.nickname)
         val voteIdx = voteService.createVote(voteRequest, voteUuid, creator)
+        val voteEndTime = voteService.getVoteEndTime(voteUuid)
+
         userService.addParticipant(creator, voteUuid)
 
         setCookie(sessionId, voteRequest.timeLimit, response)
 
-        return BaseResponse(CreateVoteResponse(websocketUrl, voteIdx, voteUuid)
+        return BaseResponse(CreateVoteResponse(websocketUrl, voteIdx, voteUuid, voteEndTime)
         )
     }
 
