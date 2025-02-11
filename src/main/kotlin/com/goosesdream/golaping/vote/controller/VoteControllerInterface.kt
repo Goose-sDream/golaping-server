@@ -34,7 +34,7 @@ interface VoteControllerInterface {
 
     @Operation(
         summary = "닉네임 입력",
-        description = "닉네임을 입력받고, WebSocket URL과 SessionID, voteEndTime을 반환한다.",
+        description = "닉네임을 입력받고, WebSocket URL과 SessionID, voteEndTime, voteIdx를 반환한다.",
         responses = [
             ApiResponse(responseCode = "200", description = "닉네임 입력 성공"),
             ApiResponse(responseCode = "400", description = "잘못된 요청", content = [Content(schema = Schema(implementation = HttpErrorResponse::class))]),
