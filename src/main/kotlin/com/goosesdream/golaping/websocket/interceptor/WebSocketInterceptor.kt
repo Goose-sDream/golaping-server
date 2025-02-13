@@ -35,7 +35,7 @@ class WebSocketInterceptor(
             voteUuid
         } else {
             ""
-        }
+        } // TODO: 예외처리 원복
 
         val isVoteEnded = if (voteUuid != null) voteService.checkVoteEnded(voteUuid) else true
         val nickname = if (!isVoteEnded) {
