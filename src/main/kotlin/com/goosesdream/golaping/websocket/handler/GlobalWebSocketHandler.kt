@@ -1,4 +1,4 @@
-package com.goosesdream.golaping.websocket
+package com.goosesdream.golaping.websocket.handler
 
 //@Component
 //class GlobalWebSocketHandler(
