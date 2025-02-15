@@ -26,26 +26,24 @@ class WebSocketInterceptor(
         wsHandler: WebSocketHandler,
         attributes: MutableMap<String, Any?>
     ): Boolean {
-        // 쿠키에서 sessionId 추출
         val cookies = (request as? ServletServerHttpRequest)?.servletRequest?.cookies
         val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
+            ?.takeIf { it.isNotBlank() }
+            ?: throw BaseException(MISSING_SESSION_ID)
 
         val voteUuid = request.headers["voteUuid"]?.firstOrNull()
-        attributes["voteUuid"] = if (!voteUuid.isNullOrBlank() && isValidVoteUuid(voteUuid)) {
-            voteUuid
-        } else {
-            ""
-        }
+        if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) throw BaseException(MISSING_VOTE_UUID)
 
-        val isVoteEnded = if (voteUuid != null) voteService.checkVoteEnded(voteUuid) else true
+        val isVoteEnded = voteService.checkVoteEnded(voteUuid)
         val nickname = if (!isVoteEnded) {
-            sessionId?.let {
+            sessionId.let {
                 sessionService.getNicknameFromSession(it) ?: throw BaseException(UNAUTHORIZED)
-            } ?: throw BaseException(MISSING_SESSION_ID)
+            }
         } else null
 
-        attributes["sessionId"] = sessionId ?: ""
-        attributes["nickname"] = nickname ?: ""
+        attributes["sessionId"] = sessionId
+        attributes["voteUuid"] = voteUuid
+        attributes["nickname"] = nickname
         attributes["isVoteEnded"] = isVoteEnded
 
         return true

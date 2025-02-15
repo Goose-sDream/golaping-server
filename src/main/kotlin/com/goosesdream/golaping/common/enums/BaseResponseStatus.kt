@@ -28,9 +28,9 @@ enum class BaseResponseStatus(
     // vote
     INVALID_VOTE_TYPE(false, HttpStatus.BAD_REQUEST, "투표 타입이 올바르지 않습니다."),
     INVALID_TIME_LIMIT(false, HttpStatus.BAD_REQUEST, "투표 제한 시간은 0분보다 커야합니다."),
-    ALREADY_EXIST_CHANNEL(false, HttpStatus.CONFLICT, "이미 존재하는 채널입니다."),
     VOTE_NOT_FOUND(false, HttpStatus.BAD_REQUEST, "존재하지 않는 투표입니다."),
     EXPIRED_VOTE(false, HttpStatus.BAD_REQUEST, "만료된 투표입니다."),
+    MISSING_VOTE_UUID(false, HttpStatus.BAD_REQUEST, "voteUuid가 없습니다."),
 
     // vote option
     INVALID_OPTION_TEXT(false, HttpStatus.BAD_REQUEST, "유효하지 않은 option text 입니다."),
