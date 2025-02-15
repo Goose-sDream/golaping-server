@@ -28,7 +28,8 @@ class WebSocketInterceptor(
     ): Boolean {
         val cookies = (request as? ServletServerHttpRequest)?.servletRequest?.cookies
         val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
-        if (sessionId.isNullOrBlank()) throw BaseException(MISSING_SESSION_ID)
+            ?.takeIf { it.isNotBlank() }
+            ?: throw BaseException(MISSING_SESSION_ID)
 
         val voteUuid = request.headers["voteUuid"]?.firstOrNull()
         if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) throw BaseException(MISSING_VOTE_UUID)

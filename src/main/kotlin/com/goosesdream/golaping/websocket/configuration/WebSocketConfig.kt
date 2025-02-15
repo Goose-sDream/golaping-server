@@ -1,5 +1,6 @@
 package com.goosesdream.golaping.websocket.configuration
 
+import com.goosesdream.golaping.websocket.handler.CustomHandshakeHandler
 import com.goosesdream.golaping.websocket.interceptor.WebSocketInterceptor
 import org.springframework.context.annotation.Configuration
 import org.springframework.messaging.simp.config.MessageBrokerRegistry
@@ -8,7 +9,8 @@ import org.springframework.web.socket.config.annotation.*
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
-    private val webSocketInterceptor: WebSocketInterceptor
+    private val webSocketInterceptor: WebSocketInterceptor,
+    private val customHandshakeHandler: CustomHandshakeHandler
 ): WebSocketMessageBrokerConfigurer {
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
         registry.addEndpoint("/ws/votes")
@@ -17,6 +19,7 @@ class WebSocketConfig(
                 "http://localhost:8080",
                 "http://golping.site"
             )
+            .setHandshakeHandler(customHandshakeHandler)
             .addInterceptors(webSocketInterceptor)
             .withSockJS()
     }
