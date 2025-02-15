@@ -26,6 +26,7 @@ enum class WebSocketResponseStatus(
 
     // websocket session
     MISSING_WEBSOCKET_SESSION_ID(false, "MISSING_WEBSOCKET_SESSION_ID", "웹소켓 세션 ID가 누락되었습니다."),
+    MISSING_PRINCIPAL(false, "MISSING_PRINCIPAL", "유저를 식별하는 Principal 구현체가 없습니다."),
 
     // vote option
     MISSING_SELECTED_OPTION(false, "MISSING_SELECTED_OPTION", "선택된 옵션이 누락되었습니다."),

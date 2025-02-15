@@ -27,14 +27,15 @@ class VoteWebSocketController(
     private val voteService: VoteService,
     private val messagingTemplate: SimpMessagingTemplate
 ) {
-
     // WebSocket 연결 후 실행
     @MessageMapping("/vote/connect")
     fun connectToVote(
         headers: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalStateException("MISSING_NICKNAME")
-        val sessionId = headers.sessionAttributes?.get("sessionId") as? String ?: throw IllegalStateException("MISSING_SESSION_ID")
+
+        // CustomHandshakeHandler에서 설정한 principal로부터 sessionId 추출
+        val principal = headers.user ?: throw IllegalStateException("MISSING_PRINCIPAL")
 
         val expirationTime = webSocketManager.getChannelExpirationTime(voteUuid) ?: throw IllegalStateException("EXPIRED_VOTE")
         val expirationDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(expirationTime), ZoneId.of("Asia/Seoul"))
@@ -63,7 +64,7 @@ class VoteWebSocketController(
         )
 
         // 여러 탭/브라우저에서 메세지를 동일하게 받도록
-        messagingTemplate.convertAndSendToUser(sessionId, "/queue/initialResponse", initialWebSocketResponse)
+        messagingTemplate.convertAndSendToUser(principal.name, "/queue/initialResponse", initialWebSocketResponse)
         return WebSocketResponse("연결에 성공했습니다.", initialWebSocketResponse)
     }
 
@@ -165,6 +166,7 @@ class VoteWebSocketController(
                     "MISSING_WEBSOCKET_SESSION_ID" -> WebSocketErrorResponse.fromStatus(MISSING_WEBSOCKET_SESSION_ID)
                     "MISSING_NICKNAME" -> WebSocketErrorResponse.fromStatus(MISSING_NICKNAME)
                     "MISSING_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(MISSING_VOTE_UUID)
+                    "MISSING_PRINCIPAL" -> WebSocketErrorResponse.fromStatus(MISSING_PRINCIPAL)
                     "VOTE_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_NOT_FOUND)
                     "VOTE_OPTION_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_OPTION_NOT_FOUND)
                     "USER_VOTE_LIMIT_EXCEEDED" -> WebSocketErrorResponse.fromStatus(USER_VOTE_LIMIT_EXCEEDED)
