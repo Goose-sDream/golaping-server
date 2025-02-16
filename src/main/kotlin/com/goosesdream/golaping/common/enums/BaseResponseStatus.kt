@@ -39,7 +39,7 @@ enum class BaseResponseStatus(
 
     // session
     INVALID_SESSION(false, HttpStatus.BAD_REQUEST, "유효하지 않은 세션입니다."),
-    UNAUTHORIZED(false, HttpStatus.UNAUTHORIZED, "인증되지 않은 사용자입니다."),
+    UNAUTHORIZED(false, HttpStatus.UNAUTHORIZED, "닉네임 입력을 먼저 수행해야 합니다."),
     INVALID_VOTE_UUID(false, HttpStatus.BAD_REQUEST, "유효하지 않은 vote uuid 입니다."),
     MISSING_SESSION_ID(false, HttpStatus.BAD_REQUEST, "세션 ID가 없습니다."),
 
