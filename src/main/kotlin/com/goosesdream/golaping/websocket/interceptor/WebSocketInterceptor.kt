@@ -27,18 +27,19 @@ class WebSocketInterceptor(
         attributes: MutableMap<String, Any?>
     ): Boolean {
         val cookies = (request as? ServletServerHttpRequest)?.servletRequest?.cookies
-        val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
+
+        val sessionId = cookies?.firstOrNull { it.name == "sessionId" }?.value
             ?.takeIf { it.isNotBlank() }
             ?: throw BaseException(MISSING_SESSION_ID)
 
-        val voteUuid = request.headers["voteUuid"]?.firstOrNull()
-        if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) throw BaseException(MISSING_VOTE_UUID)
+        val voteUuid = cookies.firstOrNull { it.name == "voteUuid" }?.value
+            ?.takeIf { it.isNotBlank() && isValidVoteUuid(it) }
+            ?: throw BaseException(MISSING_VOTE_UUID)
 
         val isVoteEnded = voteService.checkVoteEnded(voteUuid)
+
         val nickname = if (!isVoteEnded) {
-            sessionId.let {
-                sessionService.getNicknameFromSession(it) ?: throw BaseException(UNAUTHORIZED)
-            }
+            sessionService.getNicknameFromSession(sessionId) ?: throw BaseException(UNAUTHORIZED)
         } else null
 
         attributes["sessionId"] = sessionId
