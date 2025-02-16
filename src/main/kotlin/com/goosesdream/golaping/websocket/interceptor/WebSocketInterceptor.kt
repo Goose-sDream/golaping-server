@@ -2,6 +2,7 @@ package com.goosesdream.golaping.websocket.interceptor
 
 import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
+import com.goosesdream.golaping.common.util.logger
 import com.goosesdream.golaping.session.service.SessionService
 import com.goosesdream.golaping.vote.service.VoteService
 import org.springframework.http.server.ServerHttpRequest
@@ -20,6 +21,8 @@ class WebSocketInterceptor(
     private val sessionService: SessionService,
     private val voteService: VoteService) : HandshakeInterceptor {
 
+    private val log = logger()
+
     override fun beforeHandshake( // WebSocket 연결 전 실행되는 HTTP 요청
         request: ServerHttpRequest,
         response: ServerHttpResponse,
@@ -27,18 +30,31 @@ class WebSocketInterceptor(
         attributes: MutableMap<String, Any?>
     ): Boolean {
         val cookies = (request as? ServletServerHttpRequest)?.servletRequest?.cookies
-        val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
-            ?.takeIf { it.isNotBlank() }
-            ?: throw BaseException(MISSING_SESSION_ID)
 
-        val voteUuid = request.headers["voteUuid"]?.firstOrNull()
-        if (voteUuid.isNullOrBlank() || !isValidVoteUuid(voteUuid)) throw BaseException(MISSING_VOTE_UUID)
+        if (cookies == null) {
+            log.error("No cookies found in the request")
+        } else {
+            log.info("Received Cookies: ${cookies.joinToString { "${it.name}=${it.value}" }}")
+        }
+
+        val sessionId = cookies?.firstOrNull { it.name == "sessionId" }?.value
+            ?.takeIf { it.isNotBlank() }
+            ?: run {
+                log.error("Missing sessionId cookie")
+                throw BaseException(MISSING_SESSION_ID)
+            }
+
+        val voteUuid = cookies.firstOrNull { it.name == "voteUuid" }?.value
+            ?.takeIf { it.isNotBlank() && isValidVoteUuid(it) }
+            ?: run {
+                log.error("Missing or invalid voteUuid cookie")
+                throw BaseException(MISSING_VOTE_UUID)
+            }
 
         val isVoteEnded = voteService.checkVoteEnded(voteUuid)
+
         val nickname = if (!isVoteEnded) {
-            sessionId.let {
-                sessionService.getNicknameFromSession(it) ?: throw BaseException(UNAUTHORIZED)
-            }
+            sessionService.getNicknameFromSession(sessionId) ?: throw BaseException(UNAUTHORIZED)
         } else null
 
         attributes["sessionId"] = sessionId

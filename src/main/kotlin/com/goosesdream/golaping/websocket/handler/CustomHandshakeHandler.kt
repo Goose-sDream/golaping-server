@@ -20,7 +20,7 @@ class CustomHandshakeHandler : DefaultHandshakeHandler() {
 
         // 쿠키에서 sessionId 추출, 쿠키가 없으면 웹소켓 연결 거부
         val cookies = (request as? ServletServerHttpRequest)?.servletRequest?.cookies
-        val sessionId = cookies?.firstOrNull { it.name == "SESSIONID" }?.value
+        val sessionId = cookies?.firstOrNull { it.name == "sessionId" }?.value
             ?.takeIf { it.isNotBlank() }
             ?: throw BaseException(MISSING_SESSION_ID)
 

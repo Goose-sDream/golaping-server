@@ -14,14 +14,13 @@ class WebSocketConfig(
 ): WebSocketMessageBrokerConfigurer {
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
         registry.addEndpoint("/ws/votes")
-            .setAllowedOrigins(
+            .setAllowedOriginPatterns(
                 "http://localhost:3300",
                 "http://localhost:8080",
-                "http://golping.site"
+                "http://golaping.site"
             )
             .setHandshakeHandler(customHandshakeHandler)
             .addInterceptors(webSocketInterceptor)
-            .withSockJS()
     }
 
     override fun configureMessageBroker(configurer: MessageBrokerRegistry) {
