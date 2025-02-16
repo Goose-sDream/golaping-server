@@ -89,7 +89,7 @@ class VoteControllerTest {
 
         val cookieHeader = result.response.getHeader("Set-Cookie")
         assertThat(cookieHeader).isNotNull()
-        assertThat(cookieHeader).contains("SESSIONID=")
+        assertThat(cookieHeader).contains("sessionId=")
         assertThat(cookieHeader).contains("Path=/")
         assertThat(cookieHeader).contains("HttpOnly")
         assertThat(cookieHeader).contains("Max-Age=${voteRequest.timeLimit * 60}")
