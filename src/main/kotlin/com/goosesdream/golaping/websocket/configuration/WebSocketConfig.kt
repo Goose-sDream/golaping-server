@@ -17,12 +17,10 @@ class WebSocketConfig(
             .setAllowedOriginPatterns(
                 "http://localhost:3300",
                 "http://localhost:8080",
-                "http://golping.site"
+                "http://golaping.site"
             )
             .setHandshakeHandler(customHandshakeHandler)
-            .setAllowedOrigins()
             .addInterceptors(webSocketInterceptor)
-            .withSockJS()
     }
 
     override fun configureMessageBroker(configurer: MessageBrokerRegistry) {
