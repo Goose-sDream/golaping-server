@@ -55,7 +55,7 @@ class VoteController(
 
         userService.addParticipant(creator, voteUuid)
 
-        setCookie(sessionId, voteRequest.timeLimit, response)
+        setCookie(sessionId, voteUuid, voteRequest.timeLimit, response)
 
         return BaseResponse(CreateVoteResponse(websocketUrl, voteIdx, voteUuid, voteEndTime)
         )
@@ -79,7 +79,7 @@ class VoteController(
             timeLimit
         )
 
-        setCookie(sessionId, timeLimit, response)
+        setCookie(sessionId, voteRequest.voteUuid, timeLimit, response)
 
         val user = userService.createUser(voteRequest.nickname, voteRequest.voteUuid)
         userService.addParticipant(user, voteRequest.voteUuid)
@@ -92,21 +92,27 @@ class VoteController(
 
     private fun setCookie(
         sessionId: String,
+        voteUuid: String,
         timeLimit: Int,
         response: HttpServletResponse
     ) {
-        val cookie = Cookie("sessionId", sessionId).apply {
+        val sessionCookie = Cookie("sessionId", sessionId).apply {
             isHttpOnly = true
             path = "/"
             maxAge = timeLimit * 60
             secure = true
+            setAttribute("SameSite", "None")
         }
-        response.addCookie(cookie)
+        response.addCookie(sessionCookie)
 
-        response.addHeader(
-          "Set-Cookie",
-          "sessionId=$sessionId; Path=/; Max-Age=${timeLimit * 60}; HttpOnly; Secure; SameSite=None"
-        )
+        val voteUuidCookie = Cookie("voteUuid", voteUuid).apply {
+            isHttpOnly = true
+            path = "/"
+            maxAge = timeLimit * 60
+            secure = true
+            setAttribute("SameSite", "None")
+        }
+        response.addCookie(voteUuidCookie)
     }
 
     // 투표 결과 조회
