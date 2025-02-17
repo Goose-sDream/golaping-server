@@ -95,17 +95,18 @@ class VoteController(
         timeLimit: Int,
         response: HttpServletResponse
     ) {
-        val cookie = Cookie("sessionId", sessionId).apply { // TODO: https 설정 후 secure 속성 추가
+        val cookie = Cookie("sessionId", sessionId).apply {
             isHttpOnly = true
             path = "/"
             maxAge = timeLimit * 60
+            secure = true
         }
         response.addCookie(cookie)
 
-    //  response.setHeader( // TODO: https 설정 후 헤더 설정 추가
-    //      "Set-Cookie",
-    //      "sessionId=$sessionId; Path=/; Max-Age=${timeLimit * 60}; HttpOnly; SameSite=None; Secure"
-    //  )
+        response.addHeader(
+          "Set-Cookie",
+          "sessionId=$sessionId; Path=/; Max-Age=${timeLimit * 60}; HttpOnly; Secure; SameSite=None"
+        )
     }
 
     // 투표 결과 조회
