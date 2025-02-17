@@ -16,8 +16,10 @@ class WebSocketConfig(
         registry.addEndpoint("/ws/votes")
             .setAllowedOriginPatterns(
                 "http://localhost:3300",
+                "https://localhost:3300",
                 "http://localhost:8080",
-                "http://golaping.site"
+                "http://golaping.site",
+                "https://golaping.site"
             )
             .setHandshakeHandler(customHandshakeHandler)
             .addInterceptors(webSocketInterceptor)
