@@ -100,13 +100,9 @@ class VoteController(
             path = "/"
             maxAge = timeLimit * 60
             secure = true
+            setAttribute("SameSite", "None")
         }
         response.addCookie(cookie)
-
-        response.addHeader(
-          "Set-Cookie",
-          "sessionId=$sessionId; Path=/; Max-Age=${timeLimit * 60}; HttpOnly; Secure; SameSite=None"
-        )
     }
 
     // 투표 결과 조회
