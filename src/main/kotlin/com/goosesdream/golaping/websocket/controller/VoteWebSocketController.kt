@@ -6,15 +6,13 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
 import com.goosesdream.golaping.common.exception.WebSocketErrorResponse
-import com.goosesdream.golaping.websocket.dto.WebSocketResponse
-import com.goosesdream.golaping.websocket.dto.AddVoteOptionRequest
-import com.goosesdream.golaping.websocket.dto.VoteRequest
-import com.goosesdream.golaping.websocket.dto.WebSocketInitialResponse
 import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
+import com.goosesdream.golaping.websocket.dto.*
+import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionRequest
+import com.goosesdream.golaping.websocket.dto.voteToggle.VoteRequest
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
-import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.messaging.simp.annotation.SendToUser
 import java.time.Instant
@@ -70,7 +68,6 @@ class VoteWebSocketController(
 
     // 투표 옵션 추가
     @MessageMapping("/vote/addOption")
-    @SendTo("/topic/vote/{voteUuid}/addOption")
     fun handleAddOption(
         headers: SimpMessageHeaderAccessor,
         message: AddVoteOptionRequest
@@ -79,12 +76,16 @@ class VoteWebSocketController(
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
+
+        // 브로드캐스트
+        val broadcastMessage = voteService.createVoteOptionBroadcastData(newOption)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", broadcastMessage)
+
         return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
     }
 
     // 투표/투표취소
     @MessageMapping("/vote")
-    @SendTo("/topic/vote/{voteUuid}")
     fun handleVoteToggle(
         headers: SimpMessageHeaderAccessor,
         message: VoteRequest
@@ -115,8 +116,13 @@ class VoteWebSocketController(
                 voteService.vote(vote, nickname, voteOption)
             }
         }
-        val updatedVoteCounts = voteService.getCurrentVoteCounts(voteUuid, nickname)
-        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCounts)
+        val updatedVoteCountsForUser = voteService.getCurrentVoteCounts(voteUuid, nickname)
+
+        // 브로드캐스트용 투표 결과 반환
+        val updatedVoteCountsForBroadcast = voteService.getVoteResultsForBroadcast(voteUuid)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteCountsForBroadcast)
+
+        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCountsForUser)
     }
 
     private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
@@ -129,7 +135,6 @@ class VoteWebSocketController(
 
     // [생성자] 투표 제한 시간 도달 전 미리 투표 종료
     @MessageMapping("/vote/close")
-    @SendTo("/topic/vote/{voteUuid}/closed")
     fun closeVote(
         headers: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
