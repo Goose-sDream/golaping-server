@@ -1,6 +1,6 @@
-package com.goosesdream.golaping.websocket.dto
+package com.goosesdream.golaping.websocket.dto.voteToggle
 
-data class VoteOptionDataBroadcast(
+data class VoteResultsBroadcastOptionData(
     val optionId: Long,
     val optionName: String,
     val voteCount: Int,
