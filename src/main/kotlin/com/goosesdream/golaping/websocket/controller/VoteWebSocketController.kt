@@ -129,7 +129,6 @@ class VoteWebSocketController(
 
     // [생성자] 투표 제한 시간 도달 전 미리 투표 종료
     @MessageMapping("/vote/close")
-    @SendTo("/topic/vote/{voteUuid}/closed")
     fun closeVote(
         headers: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
