@@ -1,5 +1,5 @@
 package com.goosesdream.golaping.websocket.dto
 
-data class VoteResultsBroadcast(
+data class VoteResultsBroadcastResponse(
     val voteOptions: List<VoteOptionDataBroadcast>
 )
