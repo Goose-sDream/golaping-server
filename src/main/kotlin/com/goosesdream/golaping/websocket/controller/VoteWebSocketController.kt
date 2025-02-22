@@ -10,8 +10,9 @@ import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
 import com.goosesdream.golaping.websocket.dto.*
+import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionRequest
+import com.goosesdream.golaping.websocket.dto.voteToggle.VoteRequest
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
-import org.springframework.messaging.handler.annotation.SendTo
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.messaging.simp.annotation.SendToUser
 import java.time.Instant
@@ -67,7 +68,6 @@ class VoteWebSocketController(
 
     // 투표 옵션 추가
     @MessageMapping("/vote/addOption")
-    @SendTo("/topic/vote/{voteUuid}/addOption")
     fun handleAddOption(
         headers: SimpMessageHeaderAccessor,
         message: AddVoteOptionRequest
@@ -76,6 +76,11 @@ class VoteWebSocketController(
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
+
+        // 브로드캐스트
+        val broadcastMessage = voteService.createVoteOptionBroadcastData(newOption)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", broadcastMessage)
+
         return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
     }
 
