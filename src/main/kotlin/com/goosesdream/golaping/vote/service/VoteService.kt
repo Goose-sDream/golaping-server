@@ -5,8 +5,8 @@ import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import com.goosesdream.golaping.common.constants.Status.Companion.INACTIVE
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
-import com.goosesdream.golaping.websocket.dto.VoteOptionsData
-import com.goosesdream.golaping.websocket.dto.VoteResponse
+import com.goosesdream.golaping.websocket.dto.VoteOptionDataBroadcast
+import com.goosesdream.golaping.websocket.dto.VoteResultsBroadcast
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
@@ -19,6 +19,8 @@ import com.goosesdream.golaping.vote.repository.ParticipantRepository
 import com.goosesdream.golaping.vote.repository.UserVoteRepository
 import com.goosesdream.golaping.vote.repository.VoteOptionRepository
 import com.goosesdream.golaping.vote.repository.VoteRepository
+import com.goosesdream.golaping.websocket.dto.VoteOptionsData
+import com.goosesdream.golaping.websocket.dto.VoteResults
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -125,10 +127,10 @@ class VoteService(
         if (voteOptions.isEmpty()) return emptyList()
 
 
-        return voteOptionsData(voteOptions, participant)
+        return getVoteOptionsData(voteOptions, participant)
     }
 
-    private fun voteOptionsData(
+    private fun getVoteOptionsData(
         voteOptions: List<VoteOptions>,
         participant: Participants
     ): List<VoteOptionsData> {
@@ -148,24 +150,47 @@ class VoteService(
         }
     }
 
-    // 투표 데이터 조회
-    fun getCurrentVoteCounts(voteUuid: String, nickname: String): VoteResponse {
+    private fun getVoteOptionsDataForBroadcast(
+        voteOptions: List<VoteOptions>
+    ): List<VoteOptionDataBroadcast> {
+        return voteOptions.map { voteOption ->
+            voteOption.voteOptionIdx?.let {
+                VoteOptionDataBroadcast(
+                    optionId = it,
+                    optionName = voteOption.optionName,
+                    voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE),
+                    voteColor = voteOption.color
+                )
+            } ?: throw BaseException(VOTE_OPTION_NOT_FOUND)
+        }
+    }
+
+    // 개인별 투표 데이터 조회
+    fun getCurrentVoteCounts(voteUuid: String, nickname: String): VoteResults {
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
         val voteOptions = voteOptionRepository.findByVote(vote)
         val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
 
         if (voteOptions.isEmpty()) {// 투표 옵션이 없는 경우
-            return VoteResponse(
+            return VoteResults(
                 isCreator = vote.creator.nickname == nickname,
                 totalVoteCount = 0,
                 voteOptions = emptyList()
             )
         }
-        return VoteResponse(
+        return VoteResults(
             isCreator = vote.creator.nickname == nickname,
             totalVoteCount = userVotesRepository.countByVoteAndUserAndStatus(vote, participant.user, ACTIVE),
-            voteOptions = voteOptionsData(voteOptions, participant)
+            voteOptions = getVoteOptionsData(voteOptions, participant)
         )
+    }
+
+    // 브로드캐스트용 투표 데이터 조회
+    fun getVoteResultsForBroadcast(voteUuid: String): VoteResultsBroadcast {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val voteOptions = voteOptionRepository.findByVote(vote)
+
+        return VoteResultsBroadcast(getVoteOptionsDataForBroadcast(voteOptions))
     }
 
     // 특정 유저가 선택한 투표 옵션 목록 조회
