@@ -18,7 +18,6 @@ import com.goosesdream.golaping.vote.repository.UserVoteRepository
 import com.goosesdream.golaping.vote.repository.VoteOptionRepository
 import com.goosesdream.golaping.vote.repository.VoteRepository
 import com.goosesdream.golaping.websocket.dto.*
-import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionBroadcastResponse
 import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionResponse
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsBroadcastOptionData
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsBroadcastResponse
