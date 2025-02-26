@@ -77,9 +77,7 @@ class VoteWebSocketController(
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
 
-        // 브로드캐스트
-        val broadcastMessage = voteService.createVoteOptionBroadcastData(newOption)
-        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", broadcastMessage)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", newOption)
 
         return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
     }
