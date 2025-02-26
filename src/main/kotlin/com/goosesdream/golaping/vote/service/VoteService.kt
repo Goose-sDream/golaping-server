@@ -18,7 +18,6 @@ import com.goosesdream.golaping.vote.repository.UserVoteRepository
 import com.goosesdream.golaping.vote.repository.VoteOptionRepository
 import com.goosesdream.golaping.vote.repository.VoteRepository
 import com.goosesdream.golaping.websocket.dto.*
-import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionBroadcastResponse
 import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionResponse
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsBroadcastOptionData
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsBroadcastResponse
@@ -124,16 +123,7 @@ class VoteService(
         return AddVoteOptionResponse(
             optionId = newOption.voteOptionIdx!!,
             optionName = newOption.optionName,
-            voteColor = newOption.color,
-            isCreatedByUser = true
-        )
-    }
-
-    fun createVoteOptionBroadcastData(voteOptionResponse: AddVoteOptionResponse): AddVoteOptionBroadcastResponse {
-        return AddVoteOptionBroadcastResponse(
-            optionId = voteOptionResponse.optionId,
-            optionName = voteOptionResponse.optionName,
-            voteColor = voteOptionResponse.voteColor
+            voteColor = newOption.color
         )
     }
 
@@ -200,6 +190,19 @@ class VoteService(
             isCreator = vote.creator.nickname == nickname,
             totalVoteCount = userVotesRepository.countByVoteAndUserAndStatus(vote, participant.user, ACTIVE),
             voteOptions = getVoteOptionsData(voteOptions, participant)
+        )
+    }
+
+    fun getVoteOptionCount(optionId: Long): Int {
+        return userVotesRepository.countByVoteOptionAndStatus(voteOptionRepository.findById(optionId).orElseThrow(), ACTIVE)
+    }
+
+    fun isUserVotedForOption(voteUuid: String, nickname: String, optionId: Long): Boolean {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
+
+        return userVotesRepository.existsByVoteOptionAndUserAndStatus(
+            voteOptionRepository.findById(optionId).orElseThrow(), participant.user, ACTIVE
         )
     }
 

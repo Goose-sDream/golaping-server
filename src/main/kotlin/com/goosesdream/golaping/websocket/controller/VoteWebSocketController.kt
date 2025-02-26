@@ -71,17 +71,13 @@ class VoteWebSocketController(
     fun handleAddOption(
         headers: SimpMessageHeaderAccessor,
         message: AddVoteOptionRequest
-    ): WebSocketResponse<Any> {
+    ) {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
 
-        // 브로드캐스트
-        val broadcastMessage = voteService.createVoteOptionBroadcastData(newOption)
-        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", broadcastMessage)
-
-        return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", newOption)
     }
 
     // 투표/투표취소
