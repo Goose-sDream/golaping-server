@@ -112,13 +112,12 @@ class VoteWebSocketController(
                 voteService.vote(vote, nickname, voteOption)
             }
         }
-        val updatedVoteCountsForUser = voteService.getCurrentVoteCounts(voteUuid, nickname)
+        val updatedVoteDataForUser = voteService.getChangedVoteOption(voteUuid, nickname, selectedOptionId)
+        val updatedVoteDataForBroadcast = voteService.getChangedVoteOptionForBroadcast(voteUuid, selectedOptionId)
 
-        // 브로드캐스트용 투표 결과 반환
-        val updatedVoteCountsForBroadcast = voteService.getVoteResultsForBroadcast(voteUuid)
-        messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteCountsForBroadcast)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteDataForBroadcast)
 
-        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCountsForUser)
+        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
     }
 
     private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
