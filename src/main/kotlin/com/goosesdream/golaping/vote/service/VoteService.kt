@@ -18,7 +18,6 @@ import com.goosesdream.golaping.vote.repository.UserVoteRepository
 import com.goosesdream.golaping.vote.repository.VoteOptionRepository
 import com.goosesdream.golaping.vote.repository.VoteRepository
 import com.goosesdream.golaping.websocket.dto.*
-import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionBroadcastResponse
 import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionResponse
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsBroadcastOptionData
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsBroadcastResponse
@@ -124,16 +123,7 @@ class VoteService(
         return AddVoteOptionResponse(
             optionId = newOption.voteOptionIdx!!,
             optionName = newOption.optionName,
-            voteColor = newOption.color,
-            isCreatedByUser = true
-        )
-    }
-
-    fun createVoteOptionBroadcastData(voteOptionResponse: AddVoteOptionResponse): AddVoteOptionBroadcastResponse {
-        return AddVoteOptionBroadcastResponse(
-            optionId = voteOptionResponse.optionId,
-            optionName = voteOptionResponse.optionName,
-            voteColor = voteOptionResponse.voteColor
+            voteColor = newOption.color
         )
     }
 
@@ -184,31 +174,53 @@ class VoteService(
     }
 
     // 개인별 투표 데이터 조회
-    fun getCurrentVoteCounts(voteUuid: String, nickname: String): VoteResultsResponse {
+    fun getChangedVoteOption(voteUuid: String, nickname: String, optionId: Long): VoteResultsResponse {
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
-        val voteOptions = voteOptionRepository.findByVote(vote)
         val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
+        val voteOption = voteOptionRepository.findById(optionId).orElseThrow { throw BaseException(VOTE_OPTION_NOT_FOUND) }
 
-        if (voteOptions.isEmpty()) {// 투표 옵션이 없는 경우
-            return VoteResultsResponse(
-                isCreator = vote.creator.nickname == nickname,
-                totalVoteCount = 0,
-                voteOptions = emptyList()
-            )
-        }
+        val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
+        val isVotedByUser = userVotesRepository.existsByVoteOptionAndUserAndStatus(voteOption, participant.user, ACTIVE)
+
         return VoteResultsResponse(
             isCreator = vote.creator.nickname == nickname,
             totalVoteCount = userVotesRepository.countByVoteAndUserAndStatus(vote, participant.user, ACTIVE),
-            voteOptions = getVoteOptionsData(voteOptions, participant)
+            changedOption = VoteOptionsData(
+                optionId = optionId,
+                optionName = voteOption.optionName,
+                voteCount = voteCount,
+                voteColor = voteOption.color,
+                isVotedByUser = isVotedByUser
+            )
+        )
+    }
+
+    fun getVoteOptionCount(optionId: Long): Int {
+        return userVotesRepository.countByVoteOptionAndStatus(voteOptionRepository.findById(optionId).orElseThrow(), ACTIVE)
+    }
+
+    fun isUserVotedForOption(voteUuid: String, nickname: String, optionId: Long): Boolean {
+        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
+
+        return userVotesRepository.existsByVoteOptionAndUserAndStatus(
+            voteOptionRepository.findById(optionId).orElseThrow(), participant.user, ACTIVE
         )
     }
 
     // 브로드캐스트용 투표 데이터 조회
-    fun getVoteResultsForBroadcast(voteUuid: String): VoteResultsBroadcastResponse {
-        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
-        val voteOptions = voteOptionRepository.findByVote(vote)
+    fun getChangedVoteOptionForBroadcast(voteUuid: String, optionId: Long): VoteResultsBroadcastResponse {
+        val voteOption = voteOptionRepository.findById(optionId).orElseThrow { throw BaseException(VOTE_OPTION_NOT_FOUND) }
+        val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
 
-        return VoteResultsBroadcastResponse(getVoteOptionsDataForBroadcast(voteOptions))
+        return VoteResultsBroadcastResponse(
+            changedOption = VoteResultsBroadcastOptionData(
+                optionId = optionId,
+                optionName = voteOption.optionName,
+                voteCount = voteCount,
+                voteColor = voteOption.color
+            )
+        )
     }
 
     // 특정 유저가 선택한 투표 옵션 목록 조회

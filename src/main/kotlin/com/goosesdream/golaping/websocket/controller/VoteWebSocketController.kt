@@ -71,17 +71,13 @@ class VoteWebSocketController(
     fun handleAddOption(
         headers: SimpMessageHeaderAccessor,
         message: AddVoteOptionRequest
-    ): WebSocketResponse<Any> {
+    ) {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
 
-        // 브로드캐스트
-        val broadcastMessage = voteService.createVoteOptionBroadcastData(newOption)
-        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", broadcastMessage)
-
-        return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", newOption)
     }
 
     // 투표/투표취소
@@ -116,13 +112,12 @@ class VoteWebSocketController(
                 voteService.vote(vote, nickname, voteOption)
             }
         }
-        val updatedVoteCountsForUser = voteService.getCurrentVoteCounts(voteUuid, nickname)
+        val updatedVoteDataForUser = voteService.getChangedVoteOption(voteUuid, nickname, selectedOptionId)
+        val updatedVoteDataForBroadcast = voteService.getChangedVoteOptionForBroadcast(voteUuid, selectedOptionId)
 
-        // 브로드캐스트용 투표 결과 반환
-        val updatedVoteCountsForBroadcast = voteService.getVoteResultsForBroadcast(voteUuid)
-        messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteCountsForBroadcast)
+        messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteDataForBroadcast)
 
-        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteCountsForUser)
+        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
     }
 
     private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
