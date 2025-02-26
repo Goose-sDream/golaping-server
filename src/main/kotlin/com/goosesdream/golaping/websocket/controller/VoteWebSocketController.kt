@@ -12,12 +12,9 @@ import com.goosesdream.golaping.vote.service.VoteService
 import com.goosesdream.golaping.websocket.dto.*
 import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionRequest
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteRequest
-import org.springframework.messaging.MessageHeaders
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
-import org.springframework.messaging.simp.SimpMessageType
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.messaging.simp.annotation.SendToUser
-import org.springframework.messaging.support.MessageHeaderAccessor
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
