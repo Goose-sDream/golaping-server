@@ -12,9 +12,12 @@ import com.goosesdream.golaping.vote.service.VoteService
 import com.goosesdream.golaping.websocket.dto.*
 import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionRequest
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteRequest
+import org.springframework.messaging.MessageHeaders
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
+import org.springframework.messaging.simp.SimpMessageType
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.messaging.simp.annotation.SendToUser
+import org.springframework.messaging.support.MessageHeaderAccessor
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -71,15 +74,13 @@ class VoteWebSocketController(
     fun handleAddOption(
         headers: SimpMessageHeaderAccessor,
         message: AddVoteOptionRequest
-    ): WebSocketResponse<Any> {
+    ) {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
         val newOption = voteService.addOption(voteUuid, nickname, message.optionText, message.optionColor)
 
         messagingTemplate.convertAndSend("/topic/vote/$voteUuid/addOption", newOption)
-
-        return WebSocketResponse("새로운 옵션이 추가되었습니다.", newOption)
     }
 
     // 투표/투표취소
