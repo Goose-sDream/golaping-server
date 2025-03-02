@@ -62,6 +62,11 @@ class WebSocketInterceptor(
         attributes["nickname"] = nickname
         attributes["isVoteEnded"] = isVoteEnded
 
+        val session = request.servletRequest.session
+        session.setAttribute("voteUuid", voteUuid)
+        session.setAttribute("nickname", nickname)
+        log.info("BeforeHandshake - voteUuid set: $voteUuid")
+
         return true
     }
 
@@ -71,8 +76,14 @@ class WebSocketInterceptor(
         wsHandler: WebSocketHandler,
         exception: Exception?
     ) {
-        val voteUuid = request.attributes["voteUuid"] as? String
-        println("Handshake completed for voteUuid: $voteUuid")
+        if (request is ServletServerHttpRequest) {
+            val session = request.servletRequest.session
+            val voteUuid = session.getAttribute("voteUuid") as? String
+
+            log.info("Handshake completed for voteUuid: {}", voteUuid)
+        } else {
+            log.warn("WebSocket request is not an instance of ServletServerHttpRequest")
+        }
     }
 
     // UUID validation

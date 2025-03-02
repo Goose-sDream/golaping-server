@@ -6,6 +6,7 @@ import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
 import com.goosesdream.golaping.common.exception.WebSocketErrorResponse
+import com.goosesdream.golaping.common.util.logger
 import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
@@ -25,6 +26,9 @@ class VoteWebSocketController(
     private val voteService: VoteService,
     private val messagingTemplate: SimpMessagingTemplate
 ) {
+
+    private val log = logger()
+
     // WebSocket 연결 후 실행
     @MessageMapping("/vote/connect")
     fun connectToVote(
@@ -86,8 +90,12 @@ class VoteWebSocketController(
         headers: SimpMessageHeaderAccessor,
         message: VoteRequest
     ): WebSocketResponse<Any> {
+        log.info("Received vote option request: {}", message)
+
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+
+        log.info("Processing vote - Vote UUID: {}, Nickname: {}, Option ID: {}", voteUuid, nickname, message.optionId)
 
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
@@ -116,6 +124,7 @@ class VoteWebSocketController(
         val updatedVoteDataForBroadcast = voteService.getChangedVoteOptionForBroadcast(voteUuid, selectedOptionId)
 
         messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteDataForBroadcast)
+        log.info("Sent WebSocket message to /topic/vote/{}: {}", voteUuid, updatedVoteDataForBroadcast)
 
         return WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
     }
