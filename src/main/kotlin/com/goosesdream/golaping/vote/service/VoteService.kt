@@ -5,7 +5,6 @@ import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import com.goosesdream.golaping.common.constants.Status.Companion.INACTIVE
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
-import com.goosesdream.golaping.common.util.logger
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
