@@ -119,14 +119,12 @@ class VoteWebSocketController(
             }
         }
         val updatedVoteDataForUser = voteService.getChangedVoteOption(voteUuid, nickname, selectedOptionId)
-        log.info("updatedVoteDataForUser => {}", updatedVoteDataForUser)
-
         val updatedVoteDataForBroadcast = voteService.getChangedVoteOptionForBroadcast(voteUuid, selectedOptionId)
-        log.info("updatedVoteDataForBroadcast => {}", updatedVoteDataForBroadcast)
 
         messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteDataForBroadcast)
         log.info("Sent WebSocket message to /topic/vote/{}: {}", voteUuid, updatedVoteDataForBroadcast)
 
+        log.info("Sent WebSocket message to user-voteUuid{}: {}", voteUuid, updatedVoteDataForUser)
         return WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
     }
 
