@@ -2,7 +2,6 @@ package com.goosesdream.golaping.websocket.controller
 
 import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
-import com.goosesdream.golaping.common.enums.WebSocketResponseStatus
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
@@ -161,22 +160,22 @@ class VoteWebSocketController(
         return when (e) {
             is IllegalArgumentException -> {
                 when (e.message) {
-                    "INVALID_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(WebSocketResponseStatus.INVALID_VOTE_UUID)
+                    "INVALID_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(INVALID_VOTE_UUID)
                     "MISSING_NICKNAME" -> WebSocketErrorResponse.fromStatus(MISSING_NICKNAME)
-                    "MISSING_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(WebSocketResponseStatus.MISSING_VOTE_UUID)
+                    "MISSING_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(MISSING_VOTE_UUID)
                     "MISSING_SELECTED_OPTION" -> WebSocketErrorResponse.fromStatus(MISSING_SELECTED_OPTION)
                     else -> WebSocketErrorResponse.fromStatus(GENERAL_ERROR)
                 }
             }
             is IllegalStateException -> {
                 when (e.message) {
-                    "EXPIRED_VOTE" -> WebSocketErrorResponse.fromStatus(WebSocketResponseStatus.EXPIRED_VOTE)
+                    "EXPIRED_VOTE" -> WebSocketErrorResponse.fromStatus(EXPIRED_VOTE)
                     "MISSING_WEBSOCKET_SESSION_ID" -> WebSocketErrorResponse.fromStatus(MISSING_WEBSOCKET_SESSION_ID)
                     "MISSING_NICKNAME" -> WebSocketErrorResponse.fromStatus(MISSING_NICKNAME)
-                    "MISSING_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(WebSocketResponseStatus.MISSING_VOTE_UUID)
+                    "MISSING_VOTE_UUID" -> WebSocketErrorResponse.fromStatus(MISSING_VOTE_UUID)
                     "MISSING_PRINCIPAL" -> WebSocketErrorResponse.fromStatus(MISSING_PRINCIPAL)
-                    "VOTE_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(WebSocketResponseStatus.VOTE_NOT_FOUND)
-                    "VOTE_OPTION_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(WebSocketResponseStatus.VOTE_OPTION_NOT_FOUND)
+                    "VOTE_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_NOT_FOUND)
+                    "VOTE_OPTION_NOT_FOUND" -> WebSocketErrorResponse.fromStatus(VOTE_OPTION_NOT_FOUND)
                     "USER_VOTE_LIMIT_EXCEEDED" -> WebSocketErrorResponse.fromStatus(USER_VOTE_LIMIT_EXCEEDED)
                     else -> WebSocketErrorResponse.fromStatus(GENERAL_ERROR)
                 }
