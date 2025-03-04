@@ -92,12 +92,8 @@ class VoteWebSocketController(
         headers: SimpMessageHeaderAccessor,
         message: VoteRequest
     ): WebSocketResponse<Any> {
-        log.info("Received vote option request: {}", message)
-
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
-
-        log.info("Processing vote - Vote UUID: {}, Nickname: {}, Option ID: {}", voteUuid, nickname, message.optionId)
 
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
