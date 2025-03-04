@@ -37,8 +37,6 @@ class VoteService(
     private val userVotesRepository: UserVoteRepository
 ) {
 
-    private val log = logger()
-
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
     fun createVote(request: CreateVoteRequest, voteUuid: String, creator: Users) : Long? { //TODO: voteType에 따라 다른 로직 구현 필요
@@ -178,16 +176,12 @@ class VoteService(
 
     // 개인별 투표 데이터 조회
     fun getChangedVoteOption(voteUuid: String, nickname: String, optionId: Long): VoteResultsResponse {
-        log.info("1) Searching vote")
         val vote = voteRepository.findWithCreatorByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
-        log.info("2) Searching participant")
         val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
-        log.info("3) Searching voteOption")
         val voteOption = voteOptionRepository.findById(optionId).orElseThrow { throw BaseException(VOTE_OPTION_NOT_FOUND) }
 
         val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
         val isVotedByUser = userVotesRepository.existsByVoteOptionAndUserAndStatus(voteOption, participant.user, ACTIVE)
-        log.info("4) voteCount = {}, isVotedByUser = {}", voteCount, isVotedByUser)
 
         return VoteResultsResponse(
             isCreator = vote.creator.nickname == nickname,
@@ -217,7 +211,6 @@ class VoteService(
 
     // 브로드캐스트용 투표 데이터 조회
     fun getChangedVoteOptionForBroadcast(voteUuid: String, optionId: Long): VoteResultsBroadcastResponse {
-        log.info("1) Searching voteOption")
         val voteOption = voteOptionRepository.findById(optionId).orElseThrow { throw BaseException(VOTE_OPTION_NOT_FOUND) }
         val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
 
