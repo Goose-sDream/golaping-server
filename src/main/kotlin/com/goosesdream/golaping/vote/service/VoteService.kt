@@ -5,6 +5,7 @@ import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import com.goosesdream.golaping.common.constants.Status.Companion.INACTIVE
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
+import com.goosesdream.golaping.common.util.logger
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
@@ -35,6 +36,8 @@ class VoteService(
     private val voteOptionRepository: VoteOptionRepository,
     private val userVotesRepository: UserVoteRepository
 ) {
+
+    private val log = logger()
 
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
@@ -175,12 +178,16 @@ class VoteService(
 
     // 개인별 투표 데이터 조회
     fun getChangedVoteOption(voteUuid: String, nickname: String, optionId: Long): VoteResultsResponse {
+        log.info("1) Searching vote")
         val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        log.info("2) Searching participant")
         val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
+        log.info("3) Searching voteOption")
         val voteOption = voteOptionRepository.findById(optionId).orElseThrow { throw BaseException(VOTE_OPTION_NOT_FOUND) }
 
         val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
         val isVotedByUser = userVotesRepository.existsByVoteOptionAndUserAndStatus(voteOption, participant.user, ACTIVE)
+        log.info("4) voteCount = {}, isVotedByUser = {}", voteCount, isVotedByUser)
 
         return VoteResultsResponse(
             isCreator = vote.creator.nickname == nickname,
@@ -210,6 +217,7 @@ class VoteService(
 
     // 브로드캐스트용 투표 데이터 조회
     fun getChangedVoteOptionForBroadcast(voteUuid: String, optionId: Long): VoteResultsBroadcastResponse {
+        log.info("1) Searching voteOption")
         val voteOption = voteOptionRepository.findById(optionId).orElseThrow { throw BaseException(VOTE_OPTION_NOT_FOUND) }
         val voteCount = userVotesRepository.countByVoteOptionAndStatus(voteOption, ACTIVE)
 
