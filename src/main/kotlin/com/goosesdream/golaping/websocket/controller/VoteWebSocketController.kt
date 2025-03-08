@@ -1,17 +1,20 @@
 package com.goosesdream.golaping.websocket.controller
 
+import com.goosesdream.golaping.common.base.BaseException
 import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 import com.goosesdream.golaping.common.enums.WebSocketResponseStatus.*
 import com.goosesdream.golaping.common.exception.WebSocketErrorResponse
+import com.goosesdream.golaping.common.util.logger
 import com.goosesdream.golaping.websocket.service.WebSocketManager
 import com.goosesdream.golaping.vote.dto.VoteResultResponse
 import com.goosesdream.golaping.vote.service.VoteService
 import com.goosesdream.golaping.websocket.dto.*
 import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionRequest
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteRequest
+import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsResponse
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.messaging.simp.annotation.SendToUser
@@ -25,6 +28,9 @@ class VoteWebSocketController(
     private val voteService: VoteService,
     private val messagingTemplate: SimpMessagingTemplate
 ) {
+
+    private val log = logger()
+
     // WebSocket 연결 후 실행
     @MessageMapping("/vote/connect")
     fun connectToVote(
@@ -82,10 +88,11 @@ class VoteWebSocketController(
 
     // 투표/투표취소
     @MessageMapping("/vote")
+    @SendToUser("/queue/vote")
     fun handleVoteToggle(
         headers: SimpMessageHeaderAccessor,
         message: VoteRequest
-    ): WebSocketResponse<Any> {
+    ): WebSocketResponse<VoteResultsResponse> {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
@@ -117,7 +124,9 @@ class VoteWebSocketController(
 
         messagingTemplate.convertAndSend("/topic/vote/$voteUuid", updatedVoteDataForBroadcast)
 
-        return WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
+        val response = WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
+        log.info("Sending WebSocket response to user: {}", headers.user?.name ?: "UNKNOWN_USER")
+        return response
     }
 
     private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
@@ -150,6 +159,8 @@ class VoteWebSocketController(
     @MessageExceptionHandler
     @SendToUser("/queue/errors")
     fun handleException(e: Exception): WebSocketErrorResponse {
+        log.error("WebSocket error: {} - {}", e.javaClass.name, e.message, e)
+
         return when (e) {
             is IllegalArgumentException -> {
                 when (e.message) {
@@ -172,6 +183,9 @@ class VoteWebSocketController(
                     "USER_VOTE_LIMIT_EXCEEDED" -> WebSocketErrorResponse.fromStatus(USER_VOTE_LIMIT_EXCEEDED)
                     else -> WebSocketErrorResponse.fromStatus(GENERAL_ERROR)
                 }
+            }
+            is BaseException -> {
+                WebSocketErrorResponse.fromBaseStatus(e.status)
             }
             else -> WebSocketErrorResponse.fromStatus(GENERAL_ERROR)
         }

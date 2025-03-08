@@ -175,7 +175,7 @@ class VoteService(
 
     // 개인별 투표 데이터 조회
     fun getChangedVoteOption(voteUuid: String, nickname: String, optionId: Long): VoteResultsResponse {
-        val vote = voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        val vote = voteRepository.findWithCreatorByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
         val participant = participantRepository.findByVoteAndUserNickname(vote, nickname) ?: throw BaseException(PARTICIPANT_NOT_FOUND)
         val voteOption = voteOptionRepository.findById(optionId).orElseThrow { throw BaseException(VOTE_OPTION_NOT_FOUND) }
 
