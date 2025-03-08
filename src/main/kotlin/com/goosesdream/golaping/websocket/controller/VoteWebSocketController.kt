@@ -14,7 +14,6 @@ import com.goosesdream.golaping.vote.service.VoteService
 import com.goosesdream.golaping.websocket.dto.*
 import com.goosesdream.golaping.websocket.dto.addOption.AddVoteOptionRequest
 import com.goosesdream.golaping.websocket.dto.voteToggle.VoteRequest
-import com.goosesdream.golaping.websocket.dto.voteToggle.VoteResultsResponse
 import org.springframework.messaging.handler.annotation.MessageExceptionHandler
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.messaging.simp.annotation.SendToUser
@@ -68,7 +67,7 @@ class VoteWebSocketController(
         )
 
         // 여러 탭/브라우저에서 메세지를 동일하게 받도록
-        messagingTemplate.convertAndSendToUser(principal.name, "/queue/initialResponse", initialWebSocketResponse)
+        messagingTemplate.convertAndSendToUser(principal.name, "/queue/$voteUuid/initialResponse", initialWebSocketResponse)
         return WebSocketResponse("연결에 성공했습니다.", initialWebSocketResponse)
     }
 
