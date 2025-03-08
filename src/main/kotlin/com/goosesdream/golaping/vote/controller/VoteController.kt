@@ -97,7 +97,7 @@ class VoteController(
         response: HttpServletResponse
     ) {
         val sessionCookie = Cookie("sessionId", sessionId).apply {
-            isHttpOnly = true
+            isHttpOnly = false
             path = "/"
             maxAge = timeLimit * 60
             secure = true
@@ -106,7 +106,7 @@ class VoteController(
         response.addCookie(sessionCookie)
 
         val voteUuidCookie = Cookie("voteUuid", voteUuid).apply {
-            isHttpOnly = true
+            isHttpOnly = false
             path = "/"
             maxAge = timeLimit * 60
             secure = true

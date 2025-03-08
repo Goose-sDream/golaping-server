@@ -91,7 +91,6 @@ class VoteControllerTest {
         assertThat(cookieHeader).isNotNull()
         assertThat(cookieHeader).contains("sessionId=")
         assertThat(cookieHeader).contains("Path=/")
-        assertThat(cookieHeader).contains("HttpOnly")
         assertThat(cookieHeader).contains("Max-Age=${voteRequest.timeLimit * 60}")
 
         val response = objectMapper.readValue(result.response.contentAsString, BaseResponse::class.java)
