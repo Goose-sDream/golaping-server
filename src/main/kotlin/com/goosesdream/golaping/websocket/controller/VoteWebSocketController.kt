@@ -88,13 +88,13 @@ class VoteWebSocketController(
 
     // 투표/투표취소
     @MessageMapping("/vote")
-    @SendToUser("/queue/vote")
     fun handleVoteToggle(
         headers: SimpMessageHeaderAccessor,
         message: VoteRequest
-    ): WebSocketResponse<VoteResultsResponse> {
+    ) {
         val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
         val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+        val principal = headers.user ?: throw IllegalStateException("MISSING_PRINCIPAL")
 
         val selectedOptionId = message.optionId ?: throw IllegalArgumentException("MISSING_SELECTED_OPTION")
 
@@ -126,7 +126,7 @@ class VoteWebSocketController(
 
         val response = WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
         log.info("Sending WebSocket response to user: {}", headers.user?.name ?: "UNKNOWN_USER")
-        return response
+        messagingTemplate.convertAndSendToUser(principal.name, "/queue/vote", response)
     }
 
     private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
