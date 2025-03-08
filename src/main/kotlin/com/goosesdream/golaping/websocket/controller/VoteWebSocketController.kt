@@ -125,7 +125,7 @@ class VoteWebSocketController(
 
         val response = WebSocketResponse("투표가 완료되었습니다.", updatedVoteDataForUser)
         log.info("Sending WebSocket response to user: {}", headers.user?.name ?: "UNKNOWN_USER")
-        messagingTemplate.convertAndSendToUser(principal.name, "/queue/vote", response)
+        messagingTemplate.convertAndSendToUser(principal.name, "/queue/vote/$voteUuid", response)
     }
 
     private fun validateVoteCountLimit(voteUuid: String, nickname: String) {
