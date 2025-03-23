@@ -5,6 +5,7 @@ import com.goosesdream.golaping.common.constants.Status.Companion.ACTIVE
 import com.goosesdream.golaping.common.constants.Status.Companion.INACTIVE
 import com.goosesdream.golaping.common.enums.BaseResponseStatus.*
 import com.goosesdream.golaping.common.enums.VoteType
+import com.goosesdream.golaping.common.util.logger
 import com.goosesdream.golaping.redis.service.RedisService
 import com.goosesdream.golaping.user.entity.Users
 import com.goosesdream.golaping.vote.dto.CreateVoteRequest
@@ -35,6 +36,7 @@ class VoteService(
     private val voteOptionRepository: VoteOptionRepository,
     private val userVotesRepository: UserVoteRepository
 ) {
+    private val log = logger()
 
     // 투표 생성
     @Transactional(rollbackFor = [Exception::class])
@@ -311,14 +313,32 @@ class VoteService(
 
     // 투표 종료(투표 제한 시간 도달 전)
     fun closeVote(vote: Votes, nickname: String): List<VoteResultData> {
-        val user = participantRepository.findByVoteAndUserNickname(vote, nickname)?.user ?: throw BaseException(PARTICIPANT_NOT_FOUND)
-        if (user != vote.creator) throw BaseException(NOT_CREATOR)
+        log.info("[closeVote] 닉네임: $nickname, 투표 UUID: ${vote.uuid}, 생성자: ${vote.creator.nickname}")
 
-        if (vote.status == INACTIVE) throw BaseException(EXPIRED_VOTE)
+        val participant = participantRepository.findByVoteAndUserNickname(vote, nickname)
+        if (participant == null) {
+            log.warn("[closeVote] 참여자 정보 없음 - nickname: $nickname")
+            throw BaseException(PARTICIPANT_NOT_FOUND)
+        }
+
+        val user = participant.user
+        if (user != vote.creator) {
+            log.warn("[closeVote] 생성자가 아님 - 요청자: ${user.nickname}, 생성자: ${vote.creator.nickname}")
+            throw BaseException(NOT_CREATOR)
+        }
+
+        if (vote.status == INACTIVE) {
+            log.warn("[closeVote] 이미 종료된 투표 - voteUuid: ${vote.uuid}")
+            throw BaseException(EXPIRED_VOTE)
+        }
+
         vote.status = INACTIVE
         voteRepository.save(vote)
+        log.info("[closeVote] 투표 상태 저장 완료 - voteUuid: ${vote.uuid}")
 
-        return getVoteResults(vote.voteIdx!!)
+        val results = getVoteResults(vote.voteIdx!!)
+        log.info("[closeVote] 투표 결과 계산 완료 - 항목 수: ${results.size}")
+        return results
     }
 
     private fun getVoteOptions(vote: Votes): List<VoteOptions> {
