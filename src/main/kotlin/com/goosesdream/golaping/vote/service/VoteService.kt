@@ -347,7 +347,9 @@ class VoteService(
 
     private fun getVoteCounts(voteOptions: List<VoteOptions>): Map<Long, Int> {
         return userVotesRepository.countVotesByVoteOptionsAndStatus(voteOptions, ACTIVE)
-            .associate { (optionId, count) -> (optionId as Long) to (count as Int) }
+            .associate { (optionId, count) ->
+                (optionId as Number).toLong() to (count as Number).toInt()
+            }
     }
 
     // 타이머 만료로 인한 투표 종료 처리
