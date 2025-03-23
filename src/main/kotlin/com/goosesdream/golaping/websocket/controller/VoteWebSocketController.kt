@@ -27,7 +27,6 @@ class VoteWebSocketController(
     private val voteService: VoteService,
     private val messagingTemplate: SimpMessagingTemplate
 ) {
-
     private val log = logger()
 
     // WebSocket 연결 후 실행
@@ -138,20 +137,23 @@ class VoteWebSocketController(
 
     // [생성자] 투표 제한 시간 도달 전 미리 투표 종료
     @MessageMapping("/vote/close")
-    fun closeVote(
-        headers: SimpMessageHeaderAccessor): WebSocketResponse<Any> {
-        val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
-        val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
+    fun closeVote(headers: SimpMessageHeaderAccessor) {
+        try {
+            val voteUuid = headers.sessionAttributes?.get("voteUuid") as? String ?: throw IllegalStateException("MISSING_VOTE_UUID")
+            val nickname = headers.sessionAttributes?.get("nickname") as? String ?: throw IllegalArgumentException("MISSING_NICKNAME")
 
-        val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
+            val vote = voteService.getVote(voteUuid) ?: throw IllegalStateException("VOTE_NOT_FOUND")
 
-        val voteResults = voteService.closeVote(vote, nickname)
-        webSocketManager.stopWebSocketForVote(voteUuid)
+            val voteResults = voteService.closeVote(vote, nickname)
 
-        val broadcastMessage = VoteResultResponse(vote.title, voteResults)
-        webSocketManager.broadcastVoteClosed(voteUuid, broadcastMessage)
+            val broadcastMessage = VoteResultResponse(vote.title, voteResults)
+            log.info("Sending Broadcast message: /topic/vote/$voteUuid/closed")
+            messagingTemplate.convertAndSend("/topic/vote/$voteUuid/closed", broadcastMessage)
 
-        return WebSocketResponse("투표가 종료되었습니다.", broadcastMessage)
+            webSocketManager.stopWebSocketForVote(voteUuid)
+        } catch (e: Exception) {
+            log.error("Exception during vote: ${e.message}", e)
+        }
     }
 
     // 공통 예외 처리 핸들러
