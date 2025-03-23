@@ -236,7 +236,7 @@ class VoteService(
     }
 
     fun getVote(voteUuid: String): Votes? {
-        return voteRepository.findByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
+        return voteRepository.findWithCreatorByUuid(voteUuid) ?: throw BaseException(VOTE_NOT_FOUND)
     }
 
     fun getVoteByVoteIdx(voteIdx: Long): Votes? {
@@ -322,7 +322,7 @@ class VoteService(
         }
 
         val user = participant.user
-        if (user != vote.creator) {
+        if (user.id != vote.creator.id) {
             log.warn("[closeVote] 생성자가 아님 - 요청자: ${user.nickname}, 생성자: ${vote.creator.nickname}")
             throw BaseException(NOT_CREATOR)
         }
